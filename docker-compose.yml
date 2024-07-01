@@ -1,0 +1,72 @@
+version: '3'
+
+services:
+
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:22.0.1
+    command: ["start-dev", "--import-realm" ]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker-volume/keycloak-data/:/opt/keycloak/data
+      - ./docker-volume/keycloak-volume/:/opt/keycloak/data/import/
+
+  discovery-server:
+    container_name: discovery-server
+    image: stylit/discovery-server:latest
+    ports:
+      - "8761:8761"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+  api-gateway:
+    container_name: api-gateway
+    image: stylit/api-gateway:latest
+    expose:
+      - "8081"
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: TRACE
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://admin:1234@discovery-server:8761/eureka
+    depends_on:
+      - discovery-server
+      - keycloak
+
+# user service
+  mysql-user-service:
+    container_name: mysql-user-service
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: stylit
+      MYSQL_USER: stylit_user
+      MYSQL_PASSWORD: Stylit@1234
+      MYSQL_ROOT_PASSWORD: Stylit@1234
+    volumes:
+      - ./docker-volume/mysql-user-service:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    restart: unless-stopped
+
+  user-service:
+    container_name: user-service
+    image: stylit/user-service:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-user-service:3306/stylit
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://admin:1234@discovery-server:8761/eureka
+      # Keycloak configuration
+      KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080
+      KEYCLOAK_REALM: stylitRealm
+      KEYCLOAK_RESOURCE: stylit
+      KEYCLOAK_CREDENTIALS_SECRET: OpSnqqpmADOcRkNzKoHZadYX2BRhvMvW
+    depends_on:
+      - mysql-user-service
+      - keycloak
+      - discovery-server
+      - api-gateway
