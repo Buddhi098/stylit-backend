@@ -40,5 +40,3 @@ build/
 /docker-volume/keycloak-data/**
 /docker-volume/mysql-user-service/**
 /storage/**
-
-k
