@@ -1,14 +1,12 @@
 package com.stylit.online.controller;
 
 import com.stylit.online.dto.courier.CourierDTO;
+import com.stylit.online.dto.otp.OtpRequest;
 import com.stylit.online.dto.shop.ShopDTO;
 import com.stylit.online.dto.auth.LoginRequest;
 import com.stylit.online.dto.auth.LogoutRequest;
 import com.stylit.online.dto.shopper.UserRequest;
-import com.stylit.online.service.AuthService;
-import com.stylit.online.service.CourierService;
-import com.stylit.online.service.ShopService;
-import com.stylit.online.service.ShopperService;
+import com.stylit.online.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +39,9 @@ public class PublicUserController {
 
     @Autowired
     private final CourierService courierService;
+
+    @Autowired
+    private final OtpService otpService;
 
     @Value("${storage.pdfs.shop.business-document}")
     private String businessDocPath;
@@ -123,4 +124,20 @@ public class PublicUserController {
             return courierService.createCourier(courierDTO);
 
     }
+
+    @PostMapping("/generateOtp")
+    public ResponseEntity generateOtp(@Valid @RequestBody OtpRequest otpRequest) {
+        return otpService.generateOtp(otpRequest);
+
+    }
+
+//    @PostMapping("/verify")
+//    public ResponseEntity<String> verifyOtp(@RequestParam String username, @RequestParam String otp) {
+//        boolean isValid = otpService.verifyOtp(username, otp);
+//        if (isValid) {
+//            return ResponseEntity.ok("OTP verified successfully.");
+//        } else {
+//            return ResponseEntity.badRequest().body("Invalid OTP or OTP has expired.");
+//        }
+//    }
 }
