@@ -14,9 +14,9 @@ import java.util.Map;
 public class ApiErrorResponse {
     private String status = "fail";
     private String message;
-    private Map<String,String> errors;
+    private Map<String,Object> errors;
 
-    public ApiErrorResponse(String validationFailed, Map<String, String> errors) {
+    public ApiErrorResponse(String validationFailed, Map<String, Object> errors) {
         this.message = validationFailed;
         this.errors = errors;
     }
