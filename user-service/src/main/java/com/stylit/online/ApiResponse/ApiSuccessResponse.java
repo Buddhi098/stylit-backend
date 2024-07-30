@@ -14,9 +14,9 @@ import java.util.Map;
 public class ApiSuccessResponse {
     private String status = "success";
     private String message;
-    private Map<String ,String> data;
+    private Map<String ,Object> data;
 
-    public ApiSuccessResponse(String message , Map<String ,String> data){
+    public ApiSuccessResponse(String message , Map<String ,Object> data){
         this.message = message;
         this.data = data;
     }
