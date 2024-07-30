@@ -2,6 +2,7 @@ package com.stylit.online.service;
 
 import com.stylit.online.ApiResponse.ApiErrorResponse;
 import com.stylit.online.ApiResponse.ApiSuccessResponse;
+import com.stylit.online.dto.IsEmailExistDTO;
 import com.stylit.online.dto.courier.*;
 import com.stylit.online.model.courier.*;
 import com.stylit.online.repository.courier.CourierRepo;
@@ -28,7 +29,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -59,110 +59,83 @@ public class CourierService {
 
     private final WebClient.Builder webClientBuilder;
 
-    public ResponseEntity createCourier(CourierDTO courierDTO){
-        try{
+    @Transactional
+    public ResponseEntity createCourier(CourierDTO courierDTO) {
+        try {
 
             // Validation
-            Map<String , String> errors= new HashMap<>();
-            if(courierRepo.existsByEmail(courierDTO.getEmail())){
-                errors.put("email" , "Email have already Registered");
+            Map<String, Object> errors = new HashMap<>();
+            if (courierRepo.existsByCourierEmail(courierDTO.getCourierEmail())) {
+                errors.put("email", "Email have already Registered");
             }
-            if(!errors.isEmpty()){
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Email have already Registered" , errors));
+            if (!courierDTO.getPassword().equals(courierDTO.getConfirm_password())) {
+                errors.put("password", "Password and Confirm Password are not Match");
             }
 
-            CourierAddressDTO courierAddressDTO = courierDTO.getAddress();
-            CourierAddress courierAddress = CourierAddress.builder()
-                    .addressLine1(courierAddressDTO.getAddressLine1())
-                    .addressLine2(courierAddressDTO.getAddressLine2())
-                    .province((courierAddressDTO.getProvince()))
-                    .city(courierAddressDTO.getCity())
-                    .postalCode(courierAddressDTO.getPostalCode())
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
+            if (!errors.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Email have already Registered", errors));
+            }
+
+            CourierBusinessDataDTO courierBusinessDataDTO = courierDTO.getCourierBusinessData();
+            CourierBusinessData courierBusinessData = CourierBusinessData.builder()
+                    .businessRegNo(courierBusinessDataDTO.getBusinessRegNo())
+                    .businessType(courierBusinessDataDTO.getBusinessType())
+                    .businessRegDate(courierBusinessDataDTO.getBusinessRegDate())
+                    .businessEmail(courierBusinessDataDTO.getBusinessEmail())
+                    .businessDocument(courierBusinessDataDTO.getBusinessDocument())
                     .build();
 
-            ContactPersonDetailsDTO contactPersonDetailsDTO = courierDTO.getContactPersonDetails();
-            ContactPersonDetails contactPersonDetails = ContactPersonDetails.builder()
-                    .email(contactPersonDetailsDTO.getEmail())
-                    .name(contactPersonDetailsDTO.getName())
-                    .phoneNumber(contactPersonDetailsDTO.getPhoneNumber())
-                    .position(contactPersonDetailsDTO.getPosition())
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
-
-            CourierPaymentDetailsDTO courierPaymentDetailsDTO = courierDTO.getCourierPaymentDetails();
-            CourierPaymentDetails courierPaymentDetails = CourierPaymentDetails.builder()
-                    .bankHolderName(courierPaymentDetailsDTO.getBankHolderName())
-                    .bankCode(courierPaymentDetailsDTO.getBankCode())
-                    .bankName(courierPaymentDetailsDTO.getBankName())
-                    .branchName(courierPaymentDetailsDTO.getBranchName())
-                    .bankPassBookAsBase64(courierPaymentDetailsDTO.getBankPassBookAsBase64())
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
-
-            BusinessDetailsDTO businessDetailsDTO = courierDTO.getBusinessDetails();
-            BusinessDetails businessDetails  = BusinessDetails.builder()
-                    .businessOwnerName(businessDetailsDTO.getBusinessOwnerName())
-                    .businessRegistrationNumber(businessDetailsDTO.getBusinessRegistrationNumber())
-                    .businessDocumentAsBase64(businessDetailsDTO.getBusinessDocumentAsBase64())
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
-
-            ServiceDetailsDTO serviceDetailsDTO = courierDTO.getServiceDetails();
-            ServiceDetails serviceDetails = ServiceDetails.builder()
-                    .averageDeliveryTime(serviceDetailsDTO.getAverageDeliveryTime())
-                    .coverageProvince(serviceDetailsDTO.getCoverageProvince())
-                    .maximumParcelSize(serviceDetailsDTO.getMaximumParcelSize())
-                    .pricing(serviceDetailsDTO.getPricing())
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
+            CourierLocationDTO courierLocationDTO = courierDTO.getCourierLocation();
+            CourierLocation courierLocation = CourierLocation.builder()
+                    .city(courierLocationDTO.getCity())
+                    .addressLine2(courierLocationDTO.getAddressLine2())
+                    .addressLine1(courierLocationDTO.getAddressLine1())
+                    .postalCode(courierLocationDTO.getPostalCode())
+                    .latitude(courierLocationDTO.getLatitude())
+                    .longitude(courierLocationDTO.getLongitude())
+                    .province(courierLocationDTO.getProvince())
                     .build();
 
             String hashedPassword = passwordEncoder.encode(courierDTO.getPassword());
 
             Courier courier = Courier.builder()
-                    .courierServiceName(courierDTO.getCourierServiceName())
-                    .email(courierDTO.getEmail())
+                    .courierName(courierDTO.getCourierName())
+                    .courierContactNumber(courierDTO.getCourierContactNumber())
+                    .courierEmail(courierDTO.getCourierEmail())
                     .password(hashedPassword)
-                    .profilePhotoPath(courierDTO.getProfilePhotoPath())
-                    .address(courierAddress)
-                    .courierPaymentDetails(courierPaymentDetails)
-                    .serviceDetails(serviceDetails)
-                    .businessDetails(businessDetails)
-                    .contactPersonDetails(contactPersonDetails)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
+                    .courierLocation(courierLocation)
+                    .courierBusinessData(courierBusinessData)
+                    .status(Courier.Status.valueOf("pending"))
                     .build();
 
-            Courier createdCourier = courierRepo.save(courier);
+            String userName = courier.getCourierEmail() + "courier";
+            String keyCloakResponse = createUser(userName, courier.getCourierEmail(), courierDTO.getPassword());
 
-            String userName = courier.getEmail() + "courier";
-            String keyCloakResponse = createUser(userName , courier.getEmail() , courierDTO.getPassword());
 
-            Map<String , String> responseData = new HashMap<>();
-            responseData.put("keyCloak_response" ,keyCloakResponse );
-            responseData.put("id" , String.valueOf(createdCourier.getId()));
-            responseData.put("name" , createdCourier.getCourierServiceName());
-            responseData.put("email" , createdCourier.getEmail());
+            if (Objects.equals(keyCloakResponse, "success")) {
+                Courier createdCourier = courierRepo.save(courier);
 
-            if(Objects.equals(keyCloakResponse, "success")){
-                return ResponseEntity.status(HttpStatus.CREATED).body(new ApiSuccessResponse("Account Created Successfully" , responseData));
-            }else{
-                return  ResponseEntity.status(HttpStatus.BAD_REQUEST).body((new ApiErrorResponse("KeyCloak Error Occur" , responseData)));
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("keyCloak_response", keyCloakResponse);
+                responseData.put("id", String.valueOf(createdCourier.getId()));
+                responseData.put("name", createdCourier.getCourierContactNumber());
+                responseData.put("email", createdCourier.getCourierEmail());
+
+                return ResponseEntity.status(HttpStatus.CREATED).body(new ApiSuccessResponse("Account Created Successfully", responseData));
+            } else {
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("keyCloak_response", keyCloakResponse);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body((new ApiErrorResponse("KeyCloak Error Occur", responseData)));
             }
 
-        }catch (DataAccessException e){
-            Map<String , String> errors = new HashMap<>();
-            errors.put("database" , e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Database error Occur" , errors));
-        }catch (Exception e){
-            Map<String , String> errors = new HashMap<>();
-            errors.put("exception" , e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Something Went Wrong" , errors));
+        } catch (DataAccessException e) {
+            Map<String, Object> errors = new HashMap<>();
+            errors.put("database", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Database error Occur", errors));
+        } catch (Exception e) {
+            Map<String, Object> errors = new HashMap<>();
+            errors.put("exception", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Something Went Wrong", errors));
         }
     }
 
@@ -262,6 +235,25 @@ public class CourierService {
         } catch (Exception e) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Exception occurred while assigning client role to user: ", e);
             throw new RuntimeException("Error assigning client role to user: " + e.getMessage(), e);
+        }
+    }
+
+    public ResponseEntity isEmailExist(IsEmailExistDTO isEmailExistDTO) {
+        try {
+            String email = isEmailExistDTO.getEmail();
+            if (courierRepo.existsByCourierEmail(email)) {
+                Map<String, Object> data = new HashMap<>();
+                data.put("isExistEmail", true);
+                return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Email have Already Registered", data));
+            } else {
+                Map<String, Object> data = new HashMap<>();
+                data.put("isExistEmail", false);
+                return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Email haven't Registered yet", data));
+            }
+        } catch (Exception e) {
+            Map<String, Object> erros = new HashMap<>();
+            erros.put("Exception", e.getMessage());
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiErrorResponse("Email haven't Registered yet", erros));
         }
     }
 

@@ -7,35 +7,21 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.time.LocalDateTime;
 
+@Entity()
+@Table(name="shop_cloth_catergory")
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "shop_addresses")
+@NoArgsConstructor
 @Builder
-public class ShopAddress {
+public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private  Long id;
 
-    @Column(name = "address_line1", nullable = false)
-    private String addressLine1;
-
-    @Column(name = "address_line2")
-    private String addressLine2;
-
-    @Column(name = "province", nullable = false)
-    private String province;
-
-    @Column(name = "city", nullable = false)
-    private String city;
-
-    @Column(name = "postal_code", nullable = false)
-    private String postalCode;
+    private String title;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

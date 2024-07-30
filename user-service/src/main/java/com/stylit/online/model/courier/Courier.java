@@ -25,40 +25,32 @@ public class Courier {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String profilePhotoPath;
+    @NotBlank(message = "Courier service name is required")
+    @Size(max = 100, message = "Courier service name must be up to 100 characters")
+    private String courierName;
+
 
     @NotBlank(message = "Email is required")
     @Email(message = "provide valid email address")
     @Column(name="email" , unique = true)
-    private String email;
+    private String courierEmail;
+
+    @NotBlank(message = "contact number is required")
+    private String courierContactNumber;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 8)
     private String password;
 
-    @NotBlank(message = "Courier service name is required")
-    @Size(max = 100, message = "Courier service name must be up to 100 characters")
-    private String courierServiceName;
+    @Enumerated(EnumType.STRING)
+    private Status status;
 
     @Valid
     @OneToOne(cascade = CascadeType.ALL)
-    private CourierAddress address;
+    private CourierLocation courierLocation;
 
     @Valid
     @OneToOne(cascade = CascadeType.ALL)
-    private ContactPersonDetails contactPersonDetails;
-
-    @Valid
-    @OneToOne(cascade = CascadeType.ALL)
-    private ServiceDetails serviceDetails;
-
-    @Valid
-    @OneToOne(cascade = CascadeType.ALL)
-    private CourierPaymentDetails courierPaymentDetails;
-
-    @Valid
-    @OneToOne(cascade = CascadeType.ALL)
-    private BusinessDetails businessDetails;
+    private CourierBusinessData courierBusinessData;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -67,4 +59,8 @@ public class Courier {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public enum Status{
+        pending , active , reject , disable , remove
+    }
 }

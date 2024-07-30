@@ -10,23 +10,34 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-@Entity
-@Table(name = "shop_front_information")
+@Entity()
+@Table(name="shop_information")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class StoreFrontInformation {
+public class ShopInformation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private  Long id;
 
-    @NotBlank(message = "Logo cannot be blank")
-    private String logoPath;
+    @NotBlank(message = "Shop Description is required")
+    private String shopDescription;
 
-    private String bannerImagePath;
+    @OneToMany(cascade = CascadeType.ALL)
+    private List<Category> categories;
+
+    @NotBlank(message = "Facebook Link is required")
+    private String facebookLink;
+
+    @NotBlank(message = "Instagram Link is required")
+    private String instagramLink;
+
+    @NotBlank(message = "Storefront Image is required")
+    private String logo;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -35,4 +46,7 @@ public class StoreFrontInformation {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    // Getters and Setters
 }
+

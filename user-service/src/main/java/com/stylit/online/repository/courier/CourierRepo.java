@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CourierRepo extends JpaRepository<Courier, Long> {
-    boolean existsByEmail(String email);
+    boolean existsByCourierEmail(String email);
 }

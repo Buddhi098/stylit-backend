@@ -2,8 +2,8 @@ package com.stylit.online.model.courier;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,32 +14,36 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name="courier_address")
+@Table(name = "courier_location")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CourierAddress {
+public class CourierLocation {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Address Line 1 is mandatory")
-    @Size(max = 255, message = "Address Line 1 cannot be longer than 255 characters")
+    @NotBlank(message = "Address Line 1 is required")
     private String addressLine1;
 
-    @Size(max = 255, message = "Address Line 2 cannot be longer than 255 characters")
     private String addressLine2;
 
-    @NotBlank(message = "Province is mandatory")
-    @Size(max = 100, message = "Province cannot be longer than 100 characters")
+    @NotBlank(message = "Province is required")
     private String province;
 
-    @NotBlank(message = "City is mandatory")
-    @Size(max = 100, message = "City cannot be longer than 100 characters")
+    @NotBlank(message = "City is required")
     private String city;
 
-    @NotBlank(message = "Postal Code is mandatory")
+    @NotNull(message = "Latitude is required")
+    private Float latitude;
+
+    @NotNull(message = "Longitude is required")
+    private Float longitude;
+
+    @NotBlank(message = "Postal Code is required")
+    @Pattern(regexp = "\\d{5}(-\\d{4})?", message = "Postal Code must be a valid format")
     private String postalCode;
 
     @CreationTimestamp

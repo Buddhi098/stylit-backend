@@ -1,25 +1,24 @@
 package com.stylit.online.controller;
 
 import com.stylit.online.dto.courier.CourierDTO;
+import com.stylit.online.dto.IsEmailExistDTO;
 import com.stylit.online.dto.otp.OtpRequest;
-import com.stylit.online.dto.shop.ShopDTO;
+import com.stylit.online.dto.otp.OtpVerifyRequest;
 import com.stylit.online.dto.auth.LoginRequest;
 import com.stylit.online.dto.auth.LogoutRequest;
-import com.stylit.online.dto.shopper.UserRequest;
+import com.stylit.online.dto.shop.ShopDTO;
+import com.stylit.online.dto.shopper.UserDTO;
+import com.stylit.online.dto.shopper.UserRegisterDTO;
 import com.stylit.online.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.util.Base64;
 import java.util.Map;
 
 @RestController
@@ -43,29 +42,16 @@ public class PublicUserController {
     @Autowired
     private final OtpService otpService;
 
-    @Value("${storage.pdfs.shop.business-document}")
-    private String businessDocPath;
-
-    @Value("${storage.images.shop.profile-photo}")
-    private String profilePhotoPath;
-
-    @Value("${storage.images.shop.cover-photo}")
-    private String coverPhotoPath;
-
-    @Value("${storage.images.courier.profile-photo}")
-    private String courierProfilePath;
-
     @PostMapping("/addUser")
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity createShopper(@Valid @RequestBody UserRequest userRequest){
-        return shopperService.saveUser(userRequest);
+    public ResponseEntity createShopper(@Valid @RequestBody UserRegisterDTO userRegisterDTO){
+        return shopperService.saveUser(userRegisterDTO);
     }
 
     @PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity login(@NotNull @RequestBody LoginRequest loginRequest){
-        Map token = authService.getAccessToken(loginRequest.getUserName() , loginRequest.getPassword() , String.valueOf(loginRequest.getUserRole()));
-        return ResponseEntity.ok(token);
+        return authService.getAccessToken(loginRequest);
     }
 
     @PostMapping("/logout")
@@ -76,53 +62,23 @@ public class PublicUserController {
     }
 
     @PostMapping("/addShop")
-    public ResponseEntity addShop(@Valid @ModelAttribute ShopDTO shopDTO ,
-                                  @RequestParam("businessInformation.businessDocument") MultipartFile businessDocument,
-                                  @RequestParam("paymentDetails.bankPassBookImage") MultipartFile bankPassBookImage,
-                                  @RequestParam("storefrontInformation.logo") MultipartFile logo,
-                                  @RequestParam("storefrontInformation.bannerImage") MultipartFile bannerImage) throws IOException {
+    public ResponseEntity addShop(@Valid @RequestBody ShopDTO shopDTO) {
+        return shopService.addShop(shopDTO);
+    }
 
-            String email = shopDTO.getEmail();
-            String fileName = email.split("@")[0];
+    @PostMapping("/isExistCourier")
+    public ResponseEntity isExistCourier(@Valid @RequestBody IsEmailExistDTO isEmailExistDTO){
+        return courierService.isEmailExist(isEmailExistDTO);
+    }
 
-            String businessDocPathResponse = shopService.saveFile(businessDocument , fileName , businessDocPath);
-            String logoPath = shopService.saveFile(logo , fileName , profilePhotoPath);
-            String bannerImagePath = shopService.saveFile(bannerImage , fileName , coverPhotoPath);
-
-            byte[] bankPassBookAsByte = bankPassBookImage.getBytes();
-            String bankPassBookAsBase64 = Base64.getEncoder().encodeToString(bankPassBookAsByte);
-
-            shopDTO.getBusinessInformation().setBusinessDocumentPath(businessDocPathResponse);
-            shopDTO.getPaymentDetails().setBankPassBookImageBase64("bankPassBookAsBase64");
-            shopDTO.getStorefrontInformation().setLogoPath(logoPath);
-            shopDTO.getStorefrontInformation().setBannerImagePath(bannerImagePath);
-
-            return shopService.addShop(shopDTO);
-
+    @PostMapping("/isExistShop")
+    public ResponseEntity isExistShop(@Valid @RequestBody IsEmailExistDTO isEmailExistDTO){
+        return shopService.isEmailExist(isEmailExistDTO);
     }
 
     @PostMapping("/addCourier")
-    public ResponseEntity createNewCourier(@Valid @ModelAttribute CourierDTO courierDTO,
-                                           @RequestParam("profile.logo") MultipartFile logo,
-                                           @RequestParam("business.certificate") MultipartFile certificate,
-                                           @RequestParam("payment.bankPassBook") MultipartFile bankPassBook) throws IOException {
-
-            String email = courierDTO.getEmail();
-
-            String profilePathResponse = courierService.saveFile(logo , email , profilePhotoPath);
-
-            byte[] certificateAsByte = certificate.getBytes();
-            String certificateAsBase64String = Base64.getEncoder().encodeToString(certificateAsByte);
-
-            byte[] bankPassBookByte = bankPassBook.getBytes();
-            String bankPassBookBase64String = Base64.getEncoder().encodeToString(bankPassBookByte);
-
-            courierDTO.setProfilePhotoPath(profilePathResponse);
-            courierDTO.getBusinessDetails().setBusinessDocumentAsBase64(certificateAsBase64String);
-            courierDTO.getCourierPaymentDetails().setBankPassBookAsBase64(bankPassBookBase64String);
-
+    public ResponseEntity createNewCourier(@Valid @RequestBody CourierDTO courierDTO) {
             return courierService.createCourier(courierDTO);
-
     }
 
     @PostMapping("/generateOtp")
@@ -131,13 +87,8 @@ public class PublicUserController {
 
     }
 
-//    @PostMapping("/verify")
-//    public ResponseEntity<String> verifyOtp(@RequestParam String username, @RequestParam String otp) {
-//        boolean isValid = otpService.verifyOtp(username, otp);
-//        if (isValid) {
-//            return ResponseEntity.ok("OTP verified successfully.");
-//        } else {
-//            return ResponseEntity.badRequest().body("Invalid OTP or OTP has expired.");
-//        }
-//    }
+    @PostMapping("/verifyOtp")
+    public ResponseEntity verifyOtp(@Valid @RequestBody OtpVerifyRequest otpVerifyRequest) {
+        return otpService.verifyOtp(otpVerifyRequest);
+    }
 }
