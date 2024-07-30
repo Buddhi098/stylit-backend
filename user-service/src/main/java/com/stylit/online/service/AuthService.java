@@ -1,13 +1,14 @@
 package com.stylit.online.service;
 
-import com.stylit.online.configuration.WebClientConfig;
+import com.stylit.online.dto.auth.LoginRequest;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -38,7 +39,11 @@ public class AuthService {
     @Autowired
     private WebClient.Builder webClientBuilder;
 
-    public Map getAccessToken(String username, String password , String userRole) {
+    public ResponseEntity getAccessToken(LoginRequest loginRequest) {
+        String username = loginRequest.getUserName();
+        String password = loginRequest.getPassword();
+        String userRole = String.valueOf(loginRequest.getUserRole());
+
         String tokenUrl = keycloakServerUrl + "/realms/" + realm + "/protocol/openid-connect/token";
 
         String keyCloakUserName = username + userRole;
@@ -51,7 +56,7 @@ public class AuthService {
         formData.add(OAuth2Constants.CLIENT_SECRET , clientSecret);
 
         try{
-            return webClientBuilder.build()
+            Map loginData = webClientBuilder.build()
                     .post()
                     .uri(tokenUrl)
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -59,23 +64,26 @@ public class AuthService {
                     .retrieve()
                     .bodyToMono(Map.class)
                     .block();
+
+            return ResponseEntity.status(HttpStatus.OK).body(loginData);
+
         }catch (WebClientResponseException e) {
-            Map<String , String> response = new HashMap<>();
+            Map<String , Object> response = new HashMap<>();
             response.put("status" , "fail");
             response.put("access_token" , "");
             response.put("error" , e.getResponseBodyAsString());
-            return response;
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 
         } catch (Exception e) {
-            Map<String , String> response = new HashMap<>();
+            Map<String , Object> response = new HashMap<>();
             response.put("status" , "fail");
             response.put("access_token" , "");
             response.put("error" , e.getMessage());
-            return response;
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
 
-    public Map<String , String> destroyLoginSession(String refreshToken){
+    public Map<String , Object> destroyLoginSession(String refreshToken){
         String logoutUrl = keycloakServerUrl + "/realms/" + realm + "/protocol/openid-connect/logout";
 
         try {
@@ -87,13 +95,13 @@ public class AuthService {
                     .retrieve()
                     .bodyToMono(Void.class)
                     .block();
-            Map<String, String> response = new HashMap<>();
+            Map<String, Object> response = new HashMap<>();
             response.put("error" , "");
             response.put("status" , "success");
             return response;
 
         } catch (WebClientResponseException e) {
-            Map<String, String> response = new HashMap<>();
+            Map<String, Object> response = new HashMap<>();
             response.put("error" , e.getMessage());
             response.put("status" , "fail");
             return response;
