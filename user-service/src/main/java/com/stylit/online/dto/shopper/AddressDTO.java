@@ -1,4 +1,4 @@
-package com.stylit.online.model.shopper;
+package com.stylit.online.dto.shopper;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotEmpty;
@@ -7,21 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
-
-@Entity
-@Table(name="address")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class Address {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class AddressDTO {
 
     @NotEmpty(message = "Street address is required")
     private String streetAddress;
@@ -38,15 +26,7 @@ public class Address {
     @NotEmpty(message = "Province is required")
     private String province;
 
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
     @ManyToOne
     @JoinColumn(name = "user_id")
-    private User user;
+    private UserDTO user;
 }
