@@ -2,9 +2,9 @@ package com.stylit.online.service;
 
 import com.stylit.online.ApiResponse.ApiErrorResponse;
 import com.stylit.online.ApiResponse.ApiSuccessResponse;
-import com.stylit.online.dto.shopper.AddressRequest;
-import com.stylit.online.dto.shopper.UserRequest;
-import com.stylit.online.model.shopper.Address;
+import com.stylit.online.dto.shopper.UserDTO;
+import com.stylit.online.dto.shopper.UserRegisterDTO;
+import com.stylit.online.model.shop.Shop;
 import com.stylit.online.model.shopper.User;
 import com.stylit.online.repository.shopper.UserRepo;
 import jakarta.ws.rs.core.Response;
@@ -29,6 +29,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -59,66 +60,62 @@ public class ShopperService {
     private WebClient.Builder webClientBuilder;
 
     @Transactional
-    public ResponseEntity saveUser(UserRequest userRequest) {
+    public ResponseEntity saveUser(UserRegisterDTO userRegisterDTO) {
         // Create Address object
-        try{
+        try {
             // Validation
-            Map<String , String> errors = new HashMap<>();
-            if(userRepo.existsByEmail(userRequest.getEmail())){
-                errors.put("email" , "Email is already registered");
+            Map<String, Object> errors = new HashMap<>();
+            if (userRepo.existsByEmail(userRegisterDTO.getEmail())) {
+                errors.put("email", "Email is already registered");
             }
+            if (!userRegisterDTO.getPassword().equals(userRegisterDTO.getConfirmPassword())) {
+                errors.put("Password", "Confirm Password should match the Password");
+            }
+
 
             if (!errors.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Validation failed", errors));
             }
 
-            Address address = createAddressFromRequest(userRequest.getAddress());
+            String hashedPassword = passwordEncoder.encode(userRegisterDTO.getPassword());
 
-            // Create User object
-            User user = createUserFromRequest(userRequest, address);
+            User user = User.builder()
+                    .email(userRegisterDTO.getEmail())
+                    .password(hashedPassword)
+                    .stylePreference(userRegisterDTO.getStylePreference())
+                    .build();
 
-            // Save user
-            User createdUser = userRepo.save(user);
+            String userName = user.getEmail() + "shopper";
+            String keyCloakResponse = createUser(userName, user.getEmail(), userRegisterDTO.getPassword());
 
-            String userName = userRequest.getEmail() + "shopper";
-            String keyCloakResponse =  createUser(userName , userRequest.getEmail() ,userRequest.getPassword());
+            String responseStatus;
 
+            if (Objects.equals(keyCloakResponse, "success")) {
 
-            Map<String , String> responseData = new HashMap<>();
-            responseData.put("id" , String.valueOf(createdUser.getId()));
-            responseData.put("name" , createdUser.getName());
+                User createdUser= userRepo.save(user);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(new ApiSuccessResponse("User registered Successfully" , responseData));
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("keyCloak_response", keyCloakResponse);
+                responseData.put("id", String.valueOf(createdUser.getId()));
+                responseData.put("email", createdUser.getEmail());
+                return ResponseEntity.status(HttpStatus.CREATED).body(new ApiSuccessResponse("Account Created Successfully", responseData));
+            } else {
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("keyCloak_response", keyCloakResponse);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("KeyCloak Server Error", responseData));
+            }
 
-        }catch (DataAccessException e){
+        } catch (DataAccessException e) {
             System.err.println("Error Creating User:" + e.getMessage());
-            Map<String , String> errors = new HashMap<>();
-            errors.put("Database" , e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("User Registration Unsuccessful" , errors));
+            Map<String, Object> errors = new HashMap<>();
+            errors.put("Database", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("User Registration Unsuccessful", errors));
+        } catch (Exception e) {
+            System.err.println("Error Creating User:" + e.getMessage());
+            Map<String, Object> errors = new HashMap<>();
+            errors.put("Exception", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("User Registration Unsuccessful", errors));
         }
-    }
-
-    private Address createAddressFromRequest(AddressRequest addressRequest) {
-        return Address.builder()
-                .addressLine1(addressRequest.getAddressLine1())
-                .addressLine2(addressRequest.getAddressLine2())
-                .city(addressRequest.getCity())
-                .postalCode(addressRequest.getPostalCode())
-                .province(addressRequest.getProvince())
-                .country(addressRequest.getCountry())
-                .build();
-    }
-
-    private User createUserFromRequest(UserRequest userRequest, Address address) {
-        return User.builder()
-                .email(userRequest.getEmail())
-                .name(userRequest.getName())
-                .birthday(userRequest.getBirthday())
-                .gender(userRequest.getGender())
-                .password(passwordEncoder.encode(userRequest.getPassword())) // Encode password
-                .mobileNumber(userRequest.getMobileNumber())
-                .address(address)
-                .build();
     }
 
     public String createUser(String username, String email, String password) {

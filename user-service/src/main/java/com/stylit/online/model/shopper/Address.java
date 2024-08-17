@@ -1,6 +1,8 @@
 package com.stylit.online.model.shopper;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,23 +22,21 @@ public class Address {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "address_line_1")
-    private String addressLine1;
 
-    @Column(name = "address_line_2")
-    private String addressLine2;
+    @NotEmpty(message = "Street address is required")
+    private String streetAddress;
 
-    @Column(name = "city")
+    private String apartment;
+
+    @NotEmpty(message = "City is required")
     private String city;
 
-    @Column(name = "province")
-    private String province;
-
-    @Column(name = "postal_code")
+    @NotEmpty(message = "Postal code is required")
+    @Pattern(regexp = "^[0-9]{5}(?:-[0-9]{4})?$", message = "Postal code should be valid")
     private String postalCode;
 
-    @Column(name = "country")
-    private String country;
+    @NotEmpty(message = "Province is required")
+    private String province;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -46,4 +46,7 @@ public class Address {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 }
