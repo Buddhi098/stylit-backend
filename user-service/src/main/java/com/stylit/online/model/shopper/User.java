@@ -1,6 +1,10 @@
 package com.stylit.online.model.shopper;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,10 +13,10 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.util.List;
 
 @Entity
-@Table(name = "users")
+@Table(name = "user")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -21,21 +25,29 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(nullable = false)
-    private String name;
-    @Column(nullable = false, unique = true)
+
+    private String firstName;
+
+    private String lastName;
+
+    @Email(message = "Email should be valid")
+    @NotEmpty(message = "Email is required")
     private String email;
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY , orphanRemoval = true)
-    @JoinColumn(name = "address_id")
-    private Address address;
-    @Column(name = "password")
+
+    @NotEmpty(message = "Password is required")
+    @Size(min = 6, message = "Password should have at least 6 characters")
     private String password;
-    @Temporal(TemporalType.DATE)
-    private Date birthday;
+
+    @NotNull(message = "Style preference is required")
     @Enumerated(EnumType.STRING)
-    private Gender gender;
-    @Column(name = "mobile_number")
-    private String mobileNumber;
+    private StylePreference stylePreference;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Address> addresses;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PaymentMethod> paymentMethods;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -44,9 +56,7 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-
-
-    public enum Gender {
-        MALE, FEMALE, OTHER
+    public enum StylePreference {
+        MENSWEAR, WOMENSWEAR
     }
 }

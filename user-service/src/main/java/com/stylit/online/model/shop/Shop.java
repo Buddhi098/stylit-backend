@@ -1,9 +1,11 @@
 package com.stylit.online.model.shop;
 
+import com.stylit.online.model.courier.Courier;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,10 +14,9 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
-@Entity
-@Table(name = "shops")
+@Entity()
+@Table(name="shop")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -24,44 +25,33 @@ public class Shop {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private  Long id;
 
-    @NotBlank(message = "Shop name is mandatory")
+    @NotBlank(message = "Shop Name is required")
     private String shopName;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "address_id", referencedColumnName = "id")
-    private ShopAddress shopAddress;
+    @NotBlank(message = "Shop Email is required")
+    @Email(message = "Invalid email format")
+    private String shopEmail;
 
-    @Pattern(regexp = "^\\+?[0-9. ()-]{7,25}$", message = "Invalid contact number")
-    private String contactNumber;
+    @NotBlank(message = "Shop Contact Number is required")
+    private String shopContactNumber;
 
-    @Email(message = "Email should be valid")
-    @NotBlank(message = "Email is mandatory")
-    @Column(unique = true)
-    private String email;
-
-    @NotBlank(message = "Password is mandatory")
+    @NotBlank(message = "Password is required")
+    @Size(min = 6, message = "Password must be at least 6 characters long")
     private String password;
 
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "owner_id", referencedColumnName = "id")
-    private Owner owner;
+    private ShopLocation shopLocation;
+
+    @Enumerated(EnumType.STRING)
+    private Shop.Status status;
 
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "business_information_id", referencedColumnName = "id")
-    private BusinessInformation businessInformation;
+    private ShopBusinessData shopBusinessData;
 
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "payment_details_id", referencedColumnName = "id")
-    private PaymentDetails paymentDetails;
-
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "storefront_information_id", referencedColumnName = "id")
-    private StoreFrontInformation storefrontInformation;
-
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Set<ClothCategory> clothCategories;
+    private ShopInformation shopInformation;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -70,4 +60,10 @@ public class Shop {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public enum Status{
+        pending , active , reject , disable , remove
+    }
+
 }
+

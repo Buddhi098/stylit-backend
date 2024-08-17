@@ -2,9 +2,10 @@ package com.stylit.online.service;
 
 import com.stylit.online.ApiResponse.ApiErrorResponse;
 import com.stylit.online.ApiResponse.ApiSuccessResponse;
+import com.stylit.online.dto.IsEmailExistDTO;
 import com.stylit.online.dto.shop.*;
+import com.stylit.online.model.courier.Courier;
 import com.stylit.online.model.shop.*;
-import com.stylit.online.model.shop.ShopAddress;
 import com.stylit.online.repository.shop.ShopRepo;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
@@ -22,19 +23,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,7 +41,6 @@ public class ShopService {
 
     private final ShopRepo shopRepo;
 
-    @Autowired
     private final BCryptPasswordEncoder passwordEncoder;
 
     private final Keycloak keycloak;
@@ -59,164 +57,123 @@ public class ShopService {
     @Value("${keycloak.credentials.secret}")
     private String clientSecret;
 
+    @Value("${storage.images.shop.logo}")
+    private String logoPath;
+
     @Autowired
     private WebClient.Builder webClientBuilder;
+
+    @Autowired
+    private final Base64ToFile base64ToFile;
 
     public ResponseEntity addShop(ShopDTO shopDTO) {
         try {
             // Validation
-            Map<String , String> errors = new HashMap<>();
-            if(shopRepo.existsByEmail(shopDTO.getEmail())){
+            Map<String , Object> errors = new HashMap<>();
+            if(shopRepo.existsByShopEmail(shopDTO.getShopEmail())){
                 errors.put("email" , "Email already have registered");
             }
             if(!errors.isEmpty()){
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Email Already have registered" , errors));
             }
 
-            // Business Information
-            BusinessInformationDTO businessInformationDTO = shopDTO.getBusinessInformation();
-            BusinessInformation businessInformation = BusinessInformation.builder()
-                    .businessType(businessInformationDTO.getBusinessType())
-                    .businessDocumentPath(businessInformationDTO.getBusinessDocumentPath())
-                    .taxIdentificationNumber(businessInformationDTO.getTaxIdentificationNumber())
-                    .operatingHours(businessInformationDTO.getOperatingHours())
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
+            // Shop Information
+            List<CategoryDTO> categoryDTOList = shopDTO.getShopInformation().getCategories();
+            List<Category> categories = categoryDTOList.stream()
+                    .map(categoryDTO -> Category.builder()
+                            .title(categoryDTO.getTitle())
+                            .createdAt(LocalDateTime.now())
+                            .updatedAt(LocalDateTime.now())
+                            .build())
+                    .toList();
+            ShopInformationDTO shopInformationDTO = shopDTO.getShopInformation();
 
-            // Shop Address
-            ShopAddressDTO shopAddressDTO = shopDTO.getShopAddress();
-            ShopAddress shopAddress = ShopAddress.builder()
-                    .addressLine1(shopAddressDTO.getAddressLine1())
-                    .addressLine2(shopAddressDTO.getAddressLine2())
-                    .province(shopAddressDTO.getProvince())
-                    .city(shopAddressDTO.getCity())
-                    .postalCode(shopAddressDTO.getPostalCode())
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
+            // Save logo to Storage
+            base64ToFile.saveImage(shopInformationDTO.getLogo() , logoPath+"/"+shopDTO.getShopEmail());
 
-            // Cloth Categories
-            Set<ClothCategory> clothCategories = shopDTO.getClothCategories().stream()
-                    .map(category -> ClothCategory.builder().categoryName(category.getCategoryName()).createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build())
-                    .collect(Collectors.toSet());
-
-            // Owner Details
-            OwnerDTO ownerDTO = shopDTO.getOwner();
-            Owner owner = Owner.builder()
-                    .email(ownerDTO.getEmail())
-                    .contactNumber(ownerDTO.getContactNumber())
-                    .fullName(ownerDTO.getFullName())
-                    .position(ownerDTO.getPosition())
+            ShopInformation shopInformation = ShopInformation.builder()
+                    .shopDescription(shopInformationDTO.getShopDescription())
+                    .categories(categories)
+                    .facebookLink(shopInformationDTO.getFacebookLink())
+                    .instagramLink(shopInformationDTO.getInstagramLink())
+                    .logo(logoPath)
                     .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
+                    .updatedAt(LocalDateTime.now()).build();
 
-            // Payment Details
-            PaymentDetailsDTO paymentDetailsDTO = shopDTO.getPaymentDetails();
-            PaymentDetails paymentDetails = PaymentDetails.builder()
-                    .bankPassBookImageBase64(paymentDetailsDTO.getBankPassBookImageBase64())
-                    .accountNumber(paymentDetailsDTO.getAccountNumber())
-                    .bankName(paymentDetailsDTO.getBankName())
-                    .branch(paymentDetailsDTO.getBranch())
-                    .branchCode(paymentDetailsDTO.getBranchCode())
-                    .accountHolderName(paymentDetailsDTO.getAccountHolderName())
+            // Shop Location
+            ShopLocationDTO locationDTO = shopDTO.getShopLocation();
+            ShopLocation shopLocation = ShopLocation.builder()
+                    .addressLine1(locationDTO.getAddressLine1())
+                    .addressLine2(locationDTO.getAddressLine2())
+                    .city(locationDTO.getCity())
+                    .postalCode(locationDTO.getPostalCode())
+                    .longitude(locationDTO.getLongitude())
+                    .latitude(locationDTO.getLatitude())
+                    .province(locationDTO.getProvince())
                     .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
+                    .updatedAt(LocalDateTime.now()).build();
 
-            // Storefront Information
-            StoreFrontInformationDTO storeFrontInformationDTO = shopDTO.getStorefrontInformation();
-            StoreFrontInformation storeFrontInformation = StoreFrontInformation.builder()
-                    .logoPath(storeFrontInformationDTO.getLogoPath())
-                    .bannerImagePath(storeFrontInformationDTO.getBannerImagePath())
+            // Shop Business Data
+            ShopBusinessDataDTO shopBusinessDataDTO = shopDTO.getShopBusinessData();
+            ShopBusinessData shopBusinessData = ShopBusinessData.builder()
+                    .businessEmail(shopBusinessDataDTO.getBusinessEmail())
+                    .businessRegDate(shopBusinessDataDTO.getBusinessRegDate())
+                    .businessRegNo(shopBusinessDataDTO.getBusinessRegNo())
+                    .businessType(shopBusinessDataDTO.getBusinessType())
+                    .businessDocument(shopBusinessDataDTO.getBusinessDocument())
                     .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
+                    .updatedAt(LocalDateTime.now()).build();
+
+            String hashedPassword = passwordEncoder.encode(shopDTO.getPassword());
 
             // Shop
-            String hashedPassword = passwordEncoder.encode(shopDTO.getPassword());
             Shop shop = Shop.builder()
                     .shopName(shopDTO.getShopName())
-                    .shopAddress(shopAddress)
-                    .email(shopDTO.getEmail())
+                    .shopEmail(shopDTO.getShopEmail())
+                    .shopContactNumber(shopDTO.getShopContactNumber())
                     .password(hashedPassword)
-                    .contactNumber(shopDTO.getContactNumber())
-                    .clothCategories(clothCategories)
-                    .businessInformation(businessInformation)
-                    .paymentDetails(paymentDetails)
-                    .storefrontInformation(storeFrontInformation)
-                    .owner(owner)
+                    .shopInformation(shopInformation)
+                    .shopLocation(shopLocation)
+                    .status(Shop.Status.valueOf("pending"))
+                    .shopBusinessData(shopBusinessData)
                     .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
+                    .updatedAt(LocalDateTime.now()).build();
 
             // Create Keycloak Shop User
 
-            String userName = shop.getEmail() + "shop";
-            String keyCloakResponse = createUser(userName, shop.getEmail() , shopDTO.getPassword());
-            Shop createdShop = shopRepo.save(shop);
-
-            Map<String , String> responseData = new HashMap<>();
-            responseData.put("keyCloak_response" , keyCloakResponse);
-            responseData.put("id" , String.valueOf(createdShop.getId()));
-            responseData.put("name" , createdShop.getShopName());
-            responseData.put("email" , createdShop.getEmail());
+            String userName = shop.getShopEmail() + "shop";
+            String keyCloakResponse = createUser(userName, shop.getShopEmail() , shopDTO.getPassword());
 
             String responseStatus;
             if(Objects.equals(keyCloakResponse, "success")){
+                Shop createdShop = shopRepo.save(shop);
+
+                Map<String , Object> responseData = new HashMap<>();
+                responseData.put("keyCloak_response" , keyCloakResponse);
+                responseData.put("id" , String.valueOf(createdShop.getId()));
+                responseData.put("name" , createdShop.getShopName());
+                responseData.put("email" , shop.getShopEmail());
                 return ResponseEntity.status(HttpStatus.CREATED).body(new ApiSuccessResponse("Account Created Successfully" , responseData));
             }else{
+                Map<String , Object> responseData = new HashMap<>();
+                responseData.put("keyCloak_response" , keyCloakResponse);
+                responseData.put("id" , String.valueOf(shop.getId()));
+                responseData.put("name" , shop.getShopName());
+                responseData.put("email" , shop.getShopEmail());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("KeyCloak Server Error" , responseData));
             }
 
         }catch (DataAccessException e){
-            Map<String , String> errors = new HashMap<>();
+            Map<String , Object> errors = new HashMap<>();
             errors.put("database" , e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Database Error Occur" , errors));
         } catch (Exception e) {
-            Map<String , String> errors = new HashMap<>();
+            Map<String , Object> errors = new HashMap<>();
             errors.put("exception" , e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Something Went Wrong!" , errors));
         }
     }
 
-    public String saveFile(MultipartFile multipartFile, String filename, String path) {
-        try {
-            // Clean the filename and ensure it has a valid extension
-            String cleanFilename = StringUtils.cleanPath(filename);
-            String extension = getFileExtension(multipartFile.getOriginalFilename());
-            if (!cleanFilename.toLowerCase().endsWith("." + extension.toLowerCase())) {
-                cleanFilename += "." + extension;
-            }
-
-            // Create directories if they don't exist
-            File storageDir = new File(path);
-            if (!storageDir.exists()) {
-                boolean dirsCreated = storageDir.mkdirs();
-                if (!dirsCreated) {
-                    throw new RuntimeException("Failed to create directories: " + storageDir.getAbsolutePath());
-                }
-            }
-
-            // Save the file to the specified path
-            File file = new File(storageDir.getAbsolutePath() + File.separator + cleanFilename);
-            try (FileOutputStream fos = new FileOutputStream(file)) {
-                fos.write(multipartFile.getBytes());
-            }
-
-            return file.getAbsolutePath();
-        } catch (IOException e) {
-            throw new RuntimeException("Error saving file: " + e.getMessage(), e);
-        }
-    }
-
-    private String getFileExtension(String filename) {
-        if (filename != null && filename.contains(".")) {
-            return filename.substring(filename.lastIndexOf(".") + 1);
-        }
-        return "";
-    }
 
     public String createUser(String username, String email, String password) {
         UsersResource usersResource = keycloak.realm(realm).users();
@@ -284,6 +241,25 @@ public class ShopService {
         } catch (Exception e) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, "Exception occurred while assigning client role to user: ", e);
             throw new RuntimeException("Error assigning client role to user: " + e.getMessage(), e);
+        }
+    }
+
+    public ResponseEntity isEmailExist(IsEmailExistDTO isEmailExistDTO) {
+        try {
+            String email = isEmailExistDTO.getEmail();
+            if (shopRepo.existsByShopEmail(isEmailExistDTO.getEmail())) {
+                Map<String, Object> data = new HashMap<>();
+                data.put("isExistEmail", true);
+                return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Email have Already Registered", data));
+            } else {
+                Map<String, Object> data = new HashMap<>();
+                data.put("isExistEmail", false);
+                return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Email haven't Registered yet", data));
+            }
+        } catch (Exception e) {
+            Map<String, Object> erros = new HashMap<>();
+            erros.put("Exception", e.getMessage());
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiErrorResponse("Email haven't Registered yet", erros));
         }
     }
 }
