@@ -1,14 +1,19 @@
 package com.stylit.online.service;
 
 import com.stylit.online.dto.auth.LoginRequest;
+import com.stylit.online.dto.auth.RefreshToken;
+import com.stylit.online.model.courier.Courier;
+import com.stylit.online.model.shop.Shop;
+import com.stylit.online.model.shopper.User;
+import com.stylit.online.repository.courier.CourierRepo;
+import com.stylit.online.repository.shop.ShopRepo;
+import com.stylit.online.repository.shopper.UserRepo;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -18,6 +23,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +45,15 @@ public class AuthService {
 
     @Autowired
     private WebClient.Builder webClientBuilder;
+
+    @Autowired
+    private final ShopRepo shopRepo;
+
+    @Autowired
+    private final UserRepo userRepo;
+
+    @Autowired
+    private final CourierRepo courierRepo;
 
     public ResponseEntity getAccessToken(LoginRequest loginRequest) {
         String username = loginRequest.getUserName();
@@ -65,6 +81,21 @@ public class AuthService {
                     .bodyToMono(Map.class)
                     .block();
 
+
+            if(Objects.equals(userRole, "shop")){
+                Optional<Shop> shop = shopRepo.findByShopEmail(username);
+                Long id = shop.map(Shop::getId).orElse(null);
+                loginData.put("id" , id);
+            } else if (Objects.equals(userRole, "shopper")) {
+                Optional<User> shopper = userRepo.findByEmail(username);
+                Long id = shopper.map(User::getId).orElse(null);
+                loginData.put("id" , id);
+            } else if( Objects.equals(userRole, "courier" )){
+                Optional<Courier> courier = courierRepo.findByCourierEmail(username);
+                Long id = courier.map(Courier::getId).orElse(null);
+                loginData.put("id" , id);
+            }
+
             return ResponseEntity.status(HttpStatus.OK).body(loginData);
 
         }catch (WebClientResponseException e) {
@@ -83,7 +114,7 @@ public class AuthService {
         }
     }
 
-    public Map<String , Object> destroyLoginSession(String refreshToken){
+    public Map<String, Object> destroyLoginSession(String refreshToken){
         String logoutUrl = keycloakServerUrl + "/realms/" + realm + "/protocol/openid-connect/logout";
 
         try {
@@ -104,6 +135,30 @@ public class AuthService {
             Map<String, Object> response = new HashMap<>();
             response.put("error" , e.getMessage());
             response.put("status" , "fail");
+            return response;
+        }
+    }
+
+    public Map<String, Object> getAccessTokenUsingRefreshToken(RefreshToken refreshToken) {
+        String refreshTokenInString = refreshToken.getRefreshToken();
+        String tokenEndpoint =  keycloakServerUrl + "/realms/" + realm + "/protocol/openid-connect/token";
+
+        try {
+           Map accessToken =  webClientBuilder.build().post()
+                    .uri(tokenEndpoint)
+                    .body(BodyInserters.fromFormData("client_id", clientId)
+                            .with("client_secret", clientSecret)
+                            .with("refresh_token", refreshTokenInString)
+                            .with("grant_type" , "refresh_token"))
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+
+            return accessToken;
+
+        } catch (WebClientResponseException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("error" , e.getMessage());
             return response;
         }
     }

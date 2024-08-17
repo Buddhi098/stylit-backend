@@ -36,7 +36,6 @@ public class ShopLocation {
     private String province;
 
     @NotBlank(message = "Postal Code is required")
-    @Pattern(regexp = "^[0-9]{4,5}$", message = "Postal Code must be 4 or 5 digits")
     private String postalCode;
 
     @NotBlank(message = "Latitude is required")

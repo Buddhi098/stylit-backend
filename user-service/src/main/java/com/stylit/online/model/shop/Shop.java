@@ -1,5 +1,6 @@
 package com.stylit.online.model.shop;
 
+import com.stylit.online.model.courier.Courier;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -43,6 +44,9 @@ public class Shop {
     @OneToOne(cascade = CascadeType.ALL)
     private ShopLocation shopLocation;
 
+    @Enumerated(EnumType.STRING)
+    private Shop.Status status;
+
     @OneToOne(cascade = CascadeType.ALL)
     private ShopBusinessData shopBusinessData;
 
@@ -56,6 +60,10 @@ public class Shop {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public enum Status{
+        pending , active , reject , disable , remove
+    }
 
 }
 

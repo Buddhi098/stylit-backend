@@ -1,5 +1,7 @@
 package com.stylit.online.controller;
 
+import com.stylit.online.ApiResponse.ApiErrorResponse;
+import com.stylit.online.dto.auth.RefreshToken;
 import com.stylit.online.dto.courier.CourierDTO;
 import com.stylit.online.dto.IsEmailExistDTO;
 import com.stylit.online.dto.otp.OtpRequest;
@@ -19,6 +21,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -91,4 +94,20 @@ public class PublicUserController {
     public ResponseEntity verifyOtp(@Valid @RequestBody OtpVerifyRequest otpVerifyRequest) {
         return otpService.verifyOtp(otpVerifyRequest);
     }
+
+    @PostMapping("/getAccessToken")
+    public ResponseEntity getAccessToken(@Valid @RequestBody RefreshToken refreshToken) {
+        try{
+            Map response = authService.getAccessTokenUsingRefreshToken(refreshToken);
+            if(response.containsKey("error")){
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        }catch (Exception e){
+            Map<String , Object> response = new HashMap<>();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse());
+        }
+    }
+
+
 }

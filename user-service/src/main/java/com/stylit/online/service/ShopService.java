@@ -4,6 +4,7 @@ import com.stylit.online.ApiResponse.ApiErrorResponse;
 import com.stylit.online.ApiResponse.ApiSuccessResponse;
 import com.stylit.online.dto.IsEmailExistDTO;
 import com.stylit.online.dto.shop.*;
+import com.stylit.online.model.courier.Courier;
 import com.stylit.online.model.shop.*;
 import com.stylit.online.repository.shop.ShopRepo;
 import jakarta.ws.rs.core.Response;
@@ -133,6 +134,7 @@ public class ShopService {
                     .password(hashedPassword)
                     .shopInformation(shopInformation)
                     .shopLocation(shopLocation)
+                    .status(Shop.Status.valueOf("pending"))
                     .shopBusinessData(shopBusinessData)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now()).build();

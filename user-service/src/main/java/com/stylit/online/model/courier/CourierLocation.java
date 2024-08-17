@@ -43,7 +43,6 @@ public class CourierLocation {
     private Float longitude;
 
     @NotBlank(message = "Postal Code is required")
-    @Pattern(regexp = "\\d{5}(-\\d{4})?", message = "Postal Code must be a valid format")
     private String postalCode;
 
     @CreationTimestamp
