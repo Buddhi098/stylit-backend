@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("courier/recommendation")
+@RequestMapping("courier/chat")
 @RequiredArgsConstructor
 @Validated
-public class CourierRecommendationController {
+public class CourierPaymentController {
 }

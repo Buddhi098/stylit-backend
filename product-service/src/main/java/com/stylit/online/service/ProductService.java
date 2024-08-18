@@ -106,6 +106,7 @@ public class ProductService {
                     .pricing(pricing)
                     .materialCare(materialCare)
                     .variantBoxes(variantBoxes)
+                    .isRemove(0)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
@@ -125,7 +126,7 @@ public class ProductService {
 
     public ResponseEntity getAllProduct(){
         try{
-            List<Product> products = productRepo.findAll();
+            List<Product> products = productRepo.findAllActiveProducts();
             Map<String , Object> response = new HashMap<>();
             response.put("products" , products);
             return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Here you can see All the products of Stylit System" , response));
@@ -143,7 +144,7 @@ public class ProductService {
 
     public ResponseEntity getAllProductByShopId(String id){
         try{
-            List<Product> products = productRepo.findAllByShopId(id);
+            List<Product> products = productRepo.findAllActiveProductsByShopId(id);
             Map<String , Object> response = new HashMap<>();
             response.put("products" , products);
             return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Here you can see product according shop" , response));

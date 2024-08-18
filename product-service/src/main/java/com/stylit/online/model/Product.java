@@ -38,6 +38,8 @@ public class Product {
     @Column(nullable = false)
     private String shopId;
 
+    private Integer isRemove;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
