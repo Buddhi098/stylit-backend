@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("shop/user")
+@RequestMapping("shop/recommendation")
 @RequiredArgsConstructor
 @Validated
 public class ShopRecommendationController {
