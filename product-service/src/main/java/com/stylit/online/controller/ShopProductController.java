@@ -1,5 +1,6 @@
 package com.stylit.online.controller;
 
+import com.stylit.online.dto.DeleteProduct;
 import com.stylit.online.dto.ProductDTO;
 import com.stylit.online.service.ProductService;
 import jakarta.validation.Valid;
@@ -28,5 +29,10 @@ public class ShopProductController {
     @GetMapping("/get_all_product_by_shop_id")
     public ResponseEntity getAllProductByShopId(@RequestParam String id){
         return productService.getAllProductByShopId(id);
+    }
+
+    @PostMapping("/delete_product")
+    public ResponseEntity deleteProductByShop(@RequestBody DeleteProduct deleteProduct){
+        return productService.deleteProductByShop(deleteProduct);
     }
 }

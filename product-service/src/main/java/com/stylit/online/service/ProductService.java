@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ProductService {
+
     @Autowired
     private final ProductRepo productRepo;
 
@@ -115,6 +116,7 @@ public class ProductService {
             Product createdProduct = productRepo.save(product);
             Map<String , Object> responseData = new HashMap<>();
             responseData.put("ProductId" , createdProduct.getId());
+
             return ResponseEntity.status(HttpStatus.CREATED).body(new ApiSuccessResponse("Product Created Successfully" , responseData));
 
         } catch (DataIntegrityViolationException ex) {
@@ -160,4 +162,24 @@ public class ProductService {
         }
     }
 
+
+    public ResponseEntity deleteProductByShop(DeleteProduct deleteProduct) {
+        try{
+          int response =   productRepo.markProductAsRemoved(deleteProduct.getProductId() , deleteProduct.getShopId());
+
+          if(response == 0){
+              return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("product Can't find" , new HashMap<>()));
+          }
+
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("product Delete Successfully" , new HashMap<>()));
+        }catch(DataAccessException e){
+            Map<String , Object> response = new HashMap<>();
+            response.put("Database_error" , e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiErrorResponse("fail" , response));
+        }catch (Exception e){
+            Map<String , Object> response = new HashMap<>();
+            response.put("Database_error" , e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiErrorResponse("fail" , response));
+        }
+    }
 }

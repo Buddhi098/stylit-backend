@@ -22,5 +22,8 @@ public interface ProductRepo extends JpaRepository<Product , Long> {
     @Modifying
     @Transactional
     @Query("UPDATE Product p SET p.isRemove = 1 WHERE p.id = :productId AND p.shopId = :shopId")
-    void markProductAsRemoved(@Param("productId") Long productId, @Param("shopId") String shopId);
+    int markProductAsRemoved(@Param("productId") Long productId, @Param("shopId") String shopId);
+
+    @Query("SELECT COUNT(p) > 0 FROM Product p WHERE p.id = :productId AND p.shopId = :shopId AND p.isRemove <> 1")
+    boolean existByProductIdAndShopId(@Param("productId") Long productId, @Param("shopId") String shopId);
 }
