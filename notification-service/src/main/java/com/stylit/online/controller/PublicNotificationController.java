@@ -1,6 +1,8 @@
 package com.stylit.online.controller;
 
+import com.stylit.online.dto.EmailNotificationDTO;
 import com.stylit.online.dto.NotificationDTO;
+import com.stylit.online.service.EmailService;
 import com.stylit.online.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,9 @@ public class PublicNotificationController {
 
     @Autowired
     private final NotificationService notificationService;
+
+    @Autowired
+    private final EmailService emailService;
 
     @PostMapping("/create")
     public ResponseEntity<NotificationDTO> createNotification(@RequestBody NotificationDTO notificationDTO) {
@@ -40,5 +45,11 @@ public class PublicNotificationController {
             @RequestParam boolean read) {
         NotificationDTO updatedNotification = notificationService.updateReadStatus(id, read);
         return new ResponseEntity<>(updatedNotification, HttpStatus.OK);
+    }
+
+    @PostMapping("/send-email")
+    public ResponseEntity<String> sendEmailNotification(@RequestBody EmailNotificationDTO emailNotificationDTO) {
+        emailService.sendEmail(emailNotificationDTO.getUserEmail(), emailNotificationDTO.getSubject(), emailNotificationDTO.getMessage());
+        return new ResponseEntity<>("Email sent successfully", HttpStatus.OK);
     }
 }
