@@ -3,6 +3,7 @@ package com.stylit.online.controller;
 import com.stylit.online.dto.DeleteProduct;
 import com.stylit.online.dto.ProductDTO;
 import com.stylit.online.service.ProductService;
+import com.stylit.online.service.ProductUpdateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,8 @@ public class ShopProductController {
     @Autowired
     private final ProductService productService;
 
+    private final ProductUpdateService productUpdateService;
+
     @PostMapping("/add_new_product")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity addNewProduct(@Valid @RequestBody ProductDTO productDTO){
@@ -35,4 +38,11 @@ public class ShopProductController {
     public ResponseEntity deleteProductByShop(@RequestBody DeleteProduct deleteProduct){
         return productService.deleteProductByShop(deleteProduct);
     }
+
+    @PutMapping("/update_product/{id}")
+    public ResponseEntity<?> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductDTO productDTO) {
+        return productUpdateService.updateProduct(id, productDTO);
+    }
+
+
 }
