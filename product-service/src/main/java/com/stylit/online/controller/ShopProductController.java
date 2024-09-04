@@ -44,5 +44,10 @@ public class ShopProductController {
         return productUpdateService.updateProduct(id, productDTO);
     }
 
+    @GetMapping("/get_product_by_id/{product_id}/{shop_id}")
+    public ResponseEntity<?> getProductById(@PathVariable("product_id") Long id, @PathVariable("shop_id") Long shopId) {
+        return productUpdateService.getProductById(id, shopId);
+    }
+
 
 }
