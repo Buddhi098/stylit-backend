@@ -76,24 +76,25 @@ public class ProductUpdateService {
             }
 
             // Update VariantBox
-//            List<VariantBoxDTO> variantBoxDTOS = productDTO.getVariantBoxes();
-//            if (variantBoxDTOS != null && !variantBoxDTOS.isEmpty()) {
-//                List<VariantBox> variantBoxes = variantBoxDTOS.stream()
-//                        .map(variantBoxDTO -> VariantBox.builder()
-//                                .colorVariant(variantBoxDTO.getColorVariant())
-//                                .status(variantBoxDTO.getStatus())
-//                                .sizeQuantityChart(
-//                                        variantBoxDTO.getSizeQuantityChart().stream()
-//                                                .map(sizeQuantity -> SizeQuantityChart.builder()
-//                                                        .size(sizeQuantity.getSize())
-//                                                        .quantity(sizeQuantity.getQuantity())
-//                                                        .build())
-//                                                .collect(Collectors.toList())
-//                                )
-//                                .build())
-//                        .collect(Collectors.toList());
-//                existingProduct.setVariantBoxes(variantBoxes);
-//            }
+            List<VariantBoxDTO> variantBoxDTOS = productDTO.getVariantBoxes();
+            if (variantBoxDTOS != null && !variantBoxDTOS.isEmpty()) {
+                List<VariantBox> variantBoxes = variantBoxDTOS.stream()
+                        .map(variantBoxDTO -> VariantBox.builder()
+                                .colorVariant(variantBoxDTO.getColorVariant())
+                                .status(variantBoxDTO.getStatus())
+                                .sizeQuantityChart(
+                                        variantBoxDTO.getSizeQuantityChart().stream()
+                                                .map(sizeQuantity -> SizeQuantityChart.builder()
+                                                        .size(sizeQuantity.getSize())
+                                                        .quantity(sizeQuantity.getQuantity())
+                                                        .build())
+                                                .collect(Collectors.toList())
+                                )
+                                .build())
+                        .collect(Collectors.toList());
+                existingProduct.getVariantBoxes().clear();
+                existingProduct.setVariantBoxes(variantBoxes);
+            }
 
             // Update the timestamps
             existingProduct.setUpdatedAt(LocalDateTime.now());
@@ -110,6 +111,21 @@ public class ProductUpdateService {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Data integrity violation: " + ex.getMessage());
         } catch (Exception ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while updating the product: " + ex.getMessage());
+        }
+    }
+
+    public ResponseEntity getProductById(Long id, Long shopId) {
+        try{
+            Optional<Product> product = productRepo.findByIdAndShopId( id , String.valueOf(shopId) );
+            Product product1 = product.get();
+
+            return ResponseEntity.status(HttpStatus.OK).body(product1);
+        }catch (Exception e){
+            Map<String , String> response= new HashMap<>();
+
+            response.put("error" , e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
     }
 }
