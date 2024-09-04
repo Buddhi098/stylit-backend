@@ -16,6 +16,8 @@ public interface ProductRepo extends JpaRepository<Product , Long> {
     @Query("SELECT p FROM Product p WHERE p.isRemove <> 1")
     List<Product> findAllActiveProducts();
 
+    Optional<Product> findByIdAndShopId(Long id , String ShopId);
+
     @Query("SELECT p FROM Product p WHERE p.isRemove <> 1 AND p.shopId = :shopId")
     List<Product> findAllActiveProductsByShopId(@Param("shopId") String shopId);
 
