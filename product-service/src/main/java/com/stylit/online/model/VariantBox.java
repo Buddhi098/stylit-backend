@@ -21,7 +21,7 @@ public class VariantBox {
 
     private String colorVariant;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "variant_box_id")
     private List<SizeQuantityChart> sizeQuantityChart;
 
