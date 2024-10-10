@@ -109,5 +109,10 @@ public class PublicUserController {
         }
     }
 
+    @GetMapping("/getShopsNameById/{id}")
+    public ResponseEntity getShopsNameById(@PathVariable Long id){
+        return shopService.getShopNameById(id);
+    }
+
 
 }

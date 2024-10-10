@@ -262,4 +262,23 @@ public class ShopService {
             return ResponseEntity.status(HttpStatus.OK).body(new ApiErrorResponse("Email haven't Registered yet", erros));
         }
     }
+
+    public ResponseEntity getShopNameById(Long id) {
+        try{
+            Optional<Shop> shop = shopRepo.findById(id);
+            if(shop.isPresent()){
+                Map<String , Object> data = new HashMap<>();
+                data.put("shopName" , shop.get().getShopName());
+                return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Shop Name Found" , data));
+            }else{
+                Map<String , Object> data = new HashMap<>();
+                data.put("shopName" , "Not Found");
+                return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Shop Name Not Found" , data));
+            }
+        }catch (Exception e){
+            Map<String , Object> errors = new HashMap<>();
+            errors.put("Exception" , e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Something Went Wrong!" , errors));
+        }
+    }
 }
