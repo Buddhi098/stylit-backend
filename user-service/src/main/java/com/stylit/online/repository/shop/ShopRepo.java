@@ -11,4 +11,6 @@ public interface ShopRepo extends JpaRepository<Shop, Long> {
 
     Optional<Shop> findByShopEmail(String email);
     boolean existsByShopEmail(String email);
+
+    Optional<Shop> findById(Long id);
 }
