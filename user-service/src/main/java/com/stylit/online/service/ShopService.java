@@ -262,4 +262,63 @@ public class ShopService {
             return ResponseEntity.status(HttpStatus.OK).body(new ApiErrorResponse("Email haven't Registered yet", erros));
         }
     }
+
+    public ResponseEntity getShopNameById(Long id) {
+        try{
+            Optional<Shop> shop = shopRepo.findById(id);
+            if(shop.isPresent()){
+                Map<String , Object> data = new HashMap<>();
+                data.put("shopName" , shop.get().getShopName());
+                return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Shop Name Found" , data));
+            }else{
+                Map<String , Object> data = new HashMap<>();
+                data.put("shopName" , "Not Found");
+                return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Shop Name Not Found" , data));
+            }
+        }catch (Exception e){
+            Map<String , Object> errors = new HashMap<>();
+            errors.put("Exception" , e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Something Went Wrong!" , errors));
+        }
+    }
+
+    public ResponseEntity getAllShops() {
+        try{
+            List<Shop> allShops = shopRepo.findAll();
+            Map<String , Object> data = new HashMap<>();
+            data.put("shops" , allShops);
+            data.put("status" , "success");
+            data.put("message" , "Fetch All Shops' data");
+            return ResponseEntity.status(HttpStatus.OK).body(data);
+        }catch (Exception e){
+            Map<String , Object> errors = new HashMap<>();
+            errors.put("Exception" , e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Can't fetch data" , errors));
+        }
+
+    }
+
+    public ResponseEntity updateShopStatus(Long shopId, Shop.Status status) {
+        try{
+            System.out.println(shopId);
+            System.out.println(status);
+            Optional<Shop> optionalShop = shopRepo.findById(shopId);
+            if (optionalShop.isPresent()) {
+                Shop shop = optionalShop.get();
+                shop.setStatus(status);  // Set the new status
+                shopRepo.save(shop);  // Save the updated shop
+                Map<String , Object> data = new HashMap<>();
+                return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Changed Status", data));
+            }
+            Map<String , Object> errors = new HashMap<>();
+            errors.put("Exception" , "Shop Can't find");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Can't find Shop" , errors));
+        }catch (Exception e){
+            Map<String , Object> errors = new HashMap<>();
+            errors.put("Exception" , e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Can't fetch data" , errors));
+        }
+
+    }
+
 }

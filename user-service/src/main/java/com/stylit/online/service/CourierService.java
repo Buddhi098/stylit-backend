@@ -5,6 +5,7 @@ import com.stylit.online.ApiResponse.ApiSuccessResponse;
 import com.stylit.online.dto.IsEmailExistDTO;
 import com.stylit.online.dto.courier.*;
 import com.stylit.online.model.courier.*;
+import com.stylit.online.model.shop.Shop;
 import com.stylit.online.repository.courier.CourierRepo;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
@@ -255,6 +256,45 @@ public class CourierService {
             erros.put("Exception", e.getMessage());
             return ResponseEntity.status(HttpStatus.OK).body(new ApiErrorResponse("Email haven't Registered yet", erros));
         }
+    }
+
+    public ResponseEntity getAllCourier() {
+        try{
+            List<Courier> allCourier = courierRepo.findAll();
+            Map<String , Object> data = new HashMap<>();
+            data.put("courier" , allCourier);
+            data.put("status" , "success");
+            data.put("message" , "Fetch All Courier data");
+            return ResponseEntity.status(HttpStatus.OK).body(data);
+        }catch (Exception e){
+            Map<String , Object> errors = new HashMap<>();
+            errors.put("Exception" , e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Can't fetch data" , errors));
+        }
+
+    }
+
+    public ResponseEntity updateCourierStatus(Long shopId, Courier.Status status) {
+        try{
+            System.out.println(shopId);
+            System.out.println(status);
+            Optional<Courier> optionalCourier = courierRepo.findById(shopId);
+            if (optionalCourier.isPresent()) {
+                Courier courier = optionalCourier.get();
+                courier.setStatus(status);  // Set the new status
+                courierRepo.save(courier);  // Save the updated shop
+                Map<String , Object> data = new HashMap<>();
+                return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Changed Status", data));
+            }
+            Map<String , Object> errors = new HashMap<>();
+            errors.put("Exception" , "Courier Can't find");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Can't find Courier" , errors));
+        }catch (Exception e){
+            Map<String , Object> errors = new HashMap<>();
+            errors.put("Exception" , e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Can't fetch data" , errors));
+        }
+
     }
 
 }

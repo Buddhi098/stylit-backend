@@ -9,17 +9,21 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ProductService {
+
     @Autowired
     private final ProductRepo productRepo;
 
@@ -115,6 +119,7 @@ public class ProductService {
             Product createdProduct = productRepo.save(product);
             Map<String , Object> responseData = new HashMap<>();
             responseData.put("ProductId" , createdProduct.getId());
+
             return ResponseEntity.status(HttpStatus.CREATED).body(new ApiSuccessResponse("Product Created Successfully" , responseData));
 
         } catch (DataIntegrityViolationException ex) {
@@ -160,4 +165,66 @@ public class ProductService {
         }
     }
 
+
+    public ResponseEntity deleteProductByShop(DeleteProduct deleteProduct) {
+        try{
+          int response =   productRepo.markProductAsRemoved(deleteProduct.getProductId() , deleteProduct.getShopId());
+
+          if(response == 0){
+              return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("product Can't find" , new HashMap<>()));
+          }
+
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("product Delete Successfully" , new HashMap<>()));
+        }catch(DataAccessException e){
+            Map<String , Object> response = new HashMap<>();
+            response.put("Database_error" , e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiErrorResponse("fail" , response));
+        }catch (Exception e){
+            Map<String , Object> response = new HashMap<>();
+            response.put("Database_error" , e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiErrorResponse("fail" , response));
+        }
+    }
+
+    public ResponseEntity getFilteredProduct(String gender, String category, String subCategory, boolean isDiscount, boolean isNew, int page, int size) {
+        try {
+            LocalDateTime newItemDate = isNew ? LocalDateTime.now().minus(1, ChronoUnit.MONTHS) : LocalDateTime.MIN;
+            Pageable pageable = PageRequest.of(page, size);
+            List<Product> products = productRepo.findAllActiveProductsByGender(gender, pageable);
+
+            List<Product> filteredProducts = products.stream()
+                    .filter(product -> Objects.equals(category, "") || product.getGeneralInformation().getCategory().equalsIgnoreCase(category))
+                    .filter(product -> Objects.equals(subCategory, "") || product.getGeneralInformation().getSubcategory().equalsIgnoreCase(subCategory))
+                    .filter(product -> !isDiscount || !Objects.equals(product.getPricing().getDiscountType(), "")) // Assuming `isDiscounted` is a method or a field
+                    .filter(product -> !isNew || product.getCreatedAt().isAfter(newItemDate))
+                    .toList();
+
+            return ResponseEntity.status(HttpStatus.OK).body(filteredProducts);
+        } catch (DataAccessException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiErrorResponse("fail", Map.of("Database_error", e.getMessage())));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiErrorResponse("fail", Map.of("error", e.getMessage())));
+        }
+    }
+
+    public ResponseEntity getProductById(Long productId) {
+        try {
+            Optional<Product> product = productRepo.findById(productId);
+            if (product.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Product Can't find", new HashMap<>()));
+            }
+            Map<String, Object> response = new HashMap<>();
+            response.put("product", product);
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Product Found", response));
+        } catch (DataAccessException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("Database_error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiErrorResponse("fail", response));
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("Error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiErrorResponse("fail", response));
+        }
+
+    }
 }

@@ -31,7 +31,7 @@ public class Product {
     @Embedded
     private AdditionalInfo additionalInfo;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "product_id")
     private List<VariantBox> variantBoxes;
 
