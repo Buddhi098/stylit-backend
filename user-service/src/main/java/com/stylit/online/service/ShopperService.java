@@ -26,10 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -186,4 +183,20 @@ public class ShopperService {
             throw new RuntimeException("Error assigning client role to user: " + e.getMessage(), e);
         }
     }
+
+    public ResponseEntity getAllShopper(){
+        try{
+            List<User> allshoppers = userRepo.findAll();
+            Map<String , Object> data = new HashMap<>();
+            data.put("shoppers" , allshoppers);
+            data.put("status" , "success");
+            data.put("message" , "Fetch All Shoppers data");
+            return ResponseEntity.status(HttpStatus.OK).body(data);
+        }catch (Exception e){
+            Map<String , Object> errors = new HashMap<>();
+            errors.put("Exception" , e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Can't fetch data" , errors));
+        }
+    }
+
 }

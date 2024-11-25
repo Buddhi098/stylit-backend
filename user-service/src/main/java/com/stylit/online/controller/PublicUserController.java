@@ -114,5 +114,16 @@ public class PublicUserController {
         return shopService.getShopNameById(id);
     }
 
+    @GetMapping("/getAllshop")
+    public ResponseEntity getAllShops(){
+        return shopService.getAllShops();
+    }
+
+    @GetMapping("/getAllcourier")
+    public ResponseEntity getAllCourier(){
+        return courierService.getAllCourier();
+    }
+
+
 
 }

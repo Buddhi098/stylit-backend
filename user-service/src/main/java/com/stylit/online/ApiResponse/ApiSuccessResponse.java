@@ -20,5 +20,6 @@ public class ApiSuccessResponse {
         this.message = message;
         this.data = data;
     }
+
 }
 
