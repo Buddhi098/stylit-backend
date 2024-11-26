@@ -1,6 +1,8 @@
 package com.stylit.online.controller;
 
 import com.stylit.online.ApiResponse.ApiErrorResponse;
+import com.stylit.online.dto.RequestCreateDTO;
+import com.stylit.online.dto.RequestUpdateDTO;
 import com.stylit.online.dto.auth.RefreshToken;
 import com.stylit.online.dto.courier.CourierDTO;
 import com.stylit.online.dto.IsEmailExistDTO;
@@ -11,6 +13,7 @@ import com.stylit.online.dto.auth.LogoutRequest;
 import com.stylit.online.dto.shop.ShopDTO;
 import com.stylit.online.dto.shopper.UserDTO;
 import com.stylit.online.dto.shopper.UserRegisterDTO;
+import com.stylit.online.model.Request;
 import com.stylit.online.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +47,8 @@ public class PublicUserController {
 
     @Autowired
     private final OtpService otpService;
+
+    @Autowired final RequestService requestService;
 
     @PostMapping("/addUser")
     @ResponseStatus(HttpStatus.CREATED)
@@ -123,6 +128,31 @@ public class PublicUserController {
     public ResponseEntity getAllCourier(){
         return courierService.getAllCourier();
     }
+
+    @PostMapping("createRequest")
+    public ResponseEntity<?> createRequest(@Valid @RequestBody RequestCreateDTO requestCreateDTO) {
+            return requestService.createRequest(requestCreateDTO);
+
+    }
+
+    @PutMapping("/updateRequestStatus/{id}")
+    public ResponseEntity<?> updateRequestStatus(
+            @PathVariable Long id,
+            @RequestBody RequestUpdateDTO requestUpdateDTO) {
+            return requestService.updateRequestStatus(id, requestUpdateDTO);
+    }
+
+    @GetMapping("/getRequestSentByUser/{id}")
+    public ResponseEntity getRequestSentByUser(@PathVariable Long id){
+        return requestService.getRequestsSentByUser(id);
+    }
+
+    @GetMapping("/getRequestReceivedByUser/{id}")
+    public ResponseEntity getRequestReceivedByUser(@PathVariable Long id){
+        return requestService.getRequestsReceivedByUser(id);
+    }
+
+
 
 
 
