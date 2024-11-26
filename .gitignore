@@ -37,6 +37,5 @@ build/
 #./docker-volume/keycloak-volume/**
 #./docker-volume/mysql-user-service/**
 #./storage/**
-/docker-volume/keycloak-data/**
 /docker-volume/mysql-user-service/**
 /storage/**
