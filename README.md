@@ -98,6 +98,14 @@ The primary goal of Stylit is to consolidate the fragmented market of independen
 - **Customer Support**: Engage with customers to address issues and requests via chat.
 
 ## Installation
+### Steps
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Buddhi098/stylit-frontend.git
+2. Docker Setup:
+   ```bash
+   docker-compose up -d
+
 
 To be updated...
 
