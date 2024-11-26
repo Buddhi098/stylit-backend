@@ -33,7 +33,8 @@
         <module>chat-service</module>
         <module>bot-service</module>
         <module>bot-service</module>
-    </modules>
+		<module>search-service</module>
+	</modules>
 	<scm>
 		<connection/>
 		<developerConnection/>
