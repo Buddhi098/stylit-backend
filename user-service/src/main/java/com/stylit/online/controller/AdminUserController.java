@@ -7,9 +7,14 @@ import com.stylit.online.service.CourierService;
 import com.stylit.online.service.ShopService;
 import com.stylit.online.service.ShopperService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import com.stylit.online.service.UserStats;
+
+import java.util.Map;
+
 
 @RestController
 @RequestMapping("admin/user")
@@ -22,6 +27,14 @@ public class AdminUserController {
     private  final CourierService courierService;
 
     private final ShopperService shopperService;
+
+    @Autowired
+    private UserStats userStats;
+
+    @GetMapping("/shopperCount")
+    public ResponseEntity getUserStatistics() {
+        return userStats.getUserStatistics();
+    }
 
     @PostMapping("/changeStatus")
     public ResponseEntity changeShopStatus(@RequestBody ShopStatusDTO shopStatusDTO){
@@ -37,4 +50,7 @@ public class AdminUserController {
     public ResponseEntity getAllshopper(){
         return shopperService.getAllShopper();
     }
+
+
+
 }
