@@ -23,4 +23,7 @@ public interface UserRepo extends JpaRepository<User, Long> {
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :startDate AND u.createdAt <= :endDate")
     long countUsersCreatedBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+    @Query("SELECT AVG(user_count) AS average_users_per_month FROM (SELECT COUNT(u.id) AS user_count FROM User u GROUP BY YEAR(u.createdAt), MONTH(u.createdAt)) AS monthly_counts")
+    double monthlyAvgUsersCreated();
 }

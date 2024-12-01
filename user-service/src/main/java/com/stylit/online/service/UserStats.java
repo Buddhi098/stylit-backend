@@ -21,13 +21,14 @@ public class UserStats {
     public ResponseEntity getUserStatistics() {
         long totalUsers = userRepo.countTotalUsers();
         LocalDateTime endDate = LocalDate.now().atTime(LocalTime.MAX);
-        LocalDateTime startDate = LocalDate.now().minusDays(7).atStartOfDay();
-        long usersLast7Days = userRepo.countUsersCreatedBetween(startDate, endDate);
-        double percentageIncrease = calculatePercentageIncrease(usersLast7Days, totalUsers);
+        LocalDateTime startDate = LocalDate.now().minusDays(30).atStartOfDay();
+        long usersLast30Days = userRepo.countUsersCreatedBetween(startDate, endDate);
+        double monthlyAvg = userRepo.monthlyAvgUsersCreated();
+        double percentageIncrease = calculatePercentageIncrease(usersLast30Days, monthlyAvg);
 
         Map<String, Object> response = new HashMap<>();
         response.put("totalUsers", totalUsers);
-        response.put("usersLast7Days", usersLast7Days);
+        response.put("usersLast30Days", usersLast30Days);
         response.put("percentageIncrease", percentageIncrease);
 
         System.out.println(response);
@@ -35,10 +36,10 @@ public class UserStats {
         return ResponseEntity.ok(response);
     }
 
-    private double calculatePercentageIncrease(long newUsers, long totalUsers) {
-        if (totalUsers == 0) {
+    private double calculatePercentageIncrease(long newUsers, double monthlyAvg) {
+        if (monthlyAvg == 0) {
             return 0;
         }
-        return ((double) newUsers / totalUsers) * 100;
+        return ((double) newUsers / monthlyAvg) * 100;
     }
 }
