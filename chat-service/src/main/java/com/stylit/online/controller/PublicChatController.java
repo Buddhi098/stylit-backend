@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("admin/chat")
+@RequestMapping("public/chat")
 @RequiredArgsConstructor
 @Validated
-public class AdminPaymentController {
+public class PublicChatController {
 }
