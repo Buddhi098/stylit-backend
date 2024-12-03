@@ -18,12 +18,17 @@ import com.stylit.online.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -150,6 +155,24 @@ public class PublicUserController {
     @GetMapping("/getRequestReceivedByUser/{id}")
     public ResponseEntity getRequestReceivedByUser(@PathVariable Long id){
         return requestService.getRequestsReceivedByUser(id);
+    }
+
+    @GetMapping("/logo")
+    public ResponseEntity<Resource> getLogo(@RequestParam String path) {
+        try {
+            Path filePath = Paths.get(path).toAbsolutePath().normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists()) {
+                return ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
 
