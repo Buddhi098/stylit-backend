@@ -3,6 +3,7 @@ package com.stylit.online.controller;
 import com.stylit.online.dto.DeleteProduct;
 import com.stylit.online.dto.ProductDTO;
 import com.stylit.online.service.ProductService;
+import com.stylit.online.service.ProductStats;
 import com.stylit.online.service.ProductUpdateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestParam;
+
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("shop/product")
@@ -22,6 +27,14 @@ public class ShopProductController {
     private final ProductService productService;
 
     private final ProductUpdateService productUpdateService;
+
+    @Autowired
+    private ProductStats productStats;
+
+    @GetMapping("/productStats")
+    public ResponseEntity<Map<String, Object>> getProductStats(@RequestParam String id) {
+        return productStats.getProductStatistics(id);
+    }
 
     @PostMapping("/add_new_product")
     @ResponseStatus(HttpStatus.CREATED)

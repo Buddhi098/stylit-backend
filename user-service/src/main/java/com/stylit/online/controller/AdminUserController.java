@@ -31,7 +31,7 @@ public class AdminUserController {
     @Autowired
     private UserStats userStats;
 
-    @GetMapping("/shopperCount")
+    @GetMapping("/userStats")
     public ResponseEntity getUserStatistics() {
         return userStats.getUserStatistics();
     }

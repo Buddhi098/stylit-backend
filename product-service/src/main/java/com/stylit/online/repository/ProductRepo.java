@@ -38,4 +38,19 @@ public interface ProductRepo extends JpaRepository<Product, Long> {
 
     Optional<Product> findById(@NotNull Long id);
 
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.shopId = :shopId")
+    long countTotalProductsByShopId(@Param("shopId") String shopId);
+
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.isRemove = 0 AND p.shopId = :shopId")
+    long countActiveProductsByShopId(@Param("shopId") String shopId);
+
+    @Query("SELECT COUNT(p) FROM Product p JOIN p.variantBoxes vb JOIN vb.sizeQuantityChart sqc WHERE p.isRemove = 0 AND sqc.quantity = 0 AND p.shopId = :shopId")
+    long countOutOfStockProductsByShopId(@Param("shopId") String shopId);
+
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.isRemove = 0 AND p.pricing.discount > 0 AND p.shopId = :shopId")
+    long countDiscountedProductsByShopId(@Param("shopId") String shopId);
+
+    @Query("SELECT p.generalInformation.gender, COUNT(p) FROM Product p WHERE p.isRemove = 0 AND p.shopId = :shopId GROUP BY p.generalInformation.gender")
+    List<Object[]> countProductsByGenderByShopId(@Param("shopId") String shopId);
+
 }
