@@ -53,4 +53,7 @@ public interface ProductRepo extends JpaRepository<Product, Long> {
     @Query("SELECT p.generalInformation.gender, COUNT(p) FROM Product p WHERE p.isRemove = 0 AND p.shopId = :shopId GROUP BY p.generalInformation.gender")
     List<Object[]> countProductsByGenderByShopId(@Param("shopId") String shopId);
 
+    @Query("SELECT p, SUM(sqc.quantity) as totalQuantity FROM Product p JOIN p.variantBoxes vb JOIN vb.sizeQuantityChart sqc WHERE p.shopId = :shopId GROUP BY p.id ORDER BY totalQuantity DESC")
+    List<Object[]> findTopProductsByQuantityAndShopId(@Param("shopId") String shopId, Pageable pageable);
+
 }

@@ -36,6 +36,11 @@ public class ShopProductController {
         return productStats.getProductStatistics(id);
     }
 
+    @GetMapping("/topProducts")
+    public ResponseEntity<Map<String, Object>> getTopProducts(@RequestParam String shopId) {
+        return productStats.getTop6ProductsByQuantity(shopId);
+    }
+
     @PostMapping("/add_new_product")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity addNewProduct(@Valid @RequestBody ProductDTO productDTO){
