@@ -227,4 +227,20 @@ public class ProductService {
         }
 
     }
+
+    public ResponseEntity<?> getShopIdByProductID(Long productId){
+        try{
+            Optional<Product> product = productRepo.findById(productId);
+
+            Map<String , Object> data = new HashMap<>();
+            data.put("shopId" , product.get().getShopId());
+
+            return ResponseEntity.status(HttpStatus.OK).body(data);
+
+        }catch (Exception e){
+            Map<String, Object> response = new HashMap<>();
+            response.put("Error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiErrorResponse("fail", response));
+        }
+    }
 }

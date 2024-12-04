@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.P;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.jetbrains.annotations.NotNull;
@@ -135,21 +136,38 @@ public class PublicUserController {
 
     }
 
-    @PutMapping("/updateRequestStatus/{id}")
+    @PutMapping("/updateRequestStatus")
     public ResponseEntity<?> updateRequestStatus(
-            @PathVariable Long id,
             @RequestBody RequestUpdateDTO requestUpdateDTO) {
-            return requestService.updateRequestStatus(id, requestUpdateDTO);
+        return requestService.updateRequestStatusById(requestUpdateDTO);
     }
 
-    @GetMapping("/getRequestSentByUser/{id}")
-    public ResponseEntity getRequestSentByUser(@PathVariable Long id){
-        return requestService.getRequestsSentByUser(id);
+//    For Shop Connections
+
+    @GetMapping("getAllConnectableAndConnectedCouriers/{id}")
+    public ResponseEntity<?> getAllConnectableAndConnectedCouriers(@PathVariable Long id){
+        return requestService.getAllConnectableAndConnectedCouriers(id);
     }
 
-    @GetMapping("/getRequestReceivedByUser/{id}")
-    public ResponseEntity getRequestReceivedByUser(@PathVariable Long id){
-        return requestService.getRequestsReceivedByUser(id);
+    @GetMapping("getAllPendingReceiveRequestToShop/{id}")
+    public ResponseEntity<?> getAllPendingReceiveRequestToShop(@PathVariable Long id){
+        return requestService.getAllPendingReceiveRequestToShop(id);
+    }
+
+//    For Courier Connection
+    @GetMapping("getAllConnectableAndConnectedShop/{id}")
+    public ResponseEntity<?> getAllConnectableAndConnectedShop(@PathVariable Long id){
+        return requestService.getAllConnectableAndConnectedShop(id);
+    }
+
+    @GetMapping("getAllPendingReceiveRequestToCourier/{id}")
+    public ResponseEntity<?> getAllPendingReceiveRequestToCourier(@PathVariable Long id){
+        return requestService.getAllPendingReceiveRequestToCourier(id);
+    }
+
+    @GetMapping("getAllActiveCourier")
+    public ResponseEntity<?> getAllActiveCourier(){
+        return courierService.getAllActiveCourier();
     }
 
 

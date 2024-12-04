@@ -18,4 +18,6 @@ public interface ShopRepo extends JpaRepository<Shop, Long> {
 
     @EntityGraph(attributePaths = {"shopLocation", "shopBusinessData", "shopInformation"})
     List<Shop> findAll();
+
+    List<Shop> findByStatus(Shop.Status status);
 }

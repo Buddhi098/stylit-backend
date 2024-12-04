@@ -35,130 +35,279 @@ public class RequestService {
 
 
     @Transactional
-    public ResponseEntity createRequest(RequestCreateDTO requestCreateDTO) {
+    public ResponseEntity<?> createRequest(RequestCreateDTO requestCreateDTO) {
         try {
-            Request request = Request.builder()
-                    .senderId(Long.valueOf(requestCreateDTO.getSenderId()))
-                    .senderRole(requestCreateDTO.getSenderRole())
-                    .receiverRole(requestCreateDTO.getReceiverRole())
-                    .receiverId(Long.valueOf(requestCreateDTO.getReceiverId()))
-                    .status(Request.RequestStatus.PENDING)
-                    .createdAt(LocalDateTime.now())
-                    .updatedAt(LocalDateTime.now())
-                    .build();
-            Request response = requestRepo.save(request);
-            Map<String , Object> data = new HashMap<>();
-            data.put("request" , response);
-            return ResponseEntity.status(HttpStatus.CREATED).body(new ApiSuccessResponse("Request Created" , data));
+            // Check if a request with the given senderId and receiverId already exists
+            Optional<Request> existingRequest = requestRepo.findBySenderIdAndReceiverId(
+                    requestCreateDTO.getSenderId(),
+                    requestCreateDTO.getReceiverId()
+            );
+
+            if (existingRequest.isPresent()) {
+                // Update the status of the existing request to PENDING
+                Request request = existingRequest.get();
+                if (request.getStatus() != Request.RequestStatus.PENDING) {
+                    request.setStatus(Request.RequestStatus.PENDING);
+                    request.setUpdatedAt(LocalDateTime.now()); // Update the timestamp
+                    requestRepo.save(request); // Save the updated request
+                }
+
+                Map<String, Object> data = new HashMap<>();
+                data.put("request", request);
+                return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse("Request status updated to PENDING", data));
+            } else {
+                // Create a new request if it does not exist
+                Request request = Request.builder()
+                        .senderId(Long.valueOf(requestCreateDTO.getSenderId()))
+                        .senderRole(requestCreateDTO.getSenderRole())
+                        .receiverRole(requestCreateDTO.getReceiverRole())
+                        .receiverId(Long.valueOf(requestCreateDTO.getReceiverId()))
+                        .status(Request.RequestStatus.PENDING)
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
+
+                Request response = requestRepo.save(request);
+                Map<String, Object> data = new HashMap<>();
+                data.put("request", response);
+                return ResponseEntity.status(HttpStatus.CREATED).body(new ApiSuccessResponse("Request Created", data));
+            }
         } catch (Exception e) {
-            Map<String , Object> error = new HashMap<>();
-            error.put("error" , e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Request doesn't created" , error));
+            // Handle exceptions gracefully
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Request not created", error));
         }
     }
 
     @Transactional
-    public ResponseEntity updateRequestStatus(Long requestId, RequestUpdateDTO requestUpdateDTO) {
+    public ResponseEntity<?> updateRequestStatusById(RequestUpdateDTO requestUpdateDTO) {
         try {
-            Optional<Request> optionalRequest = requestRepo.findById(requestId);
+            // Fetch the request based on senderId and receiverId
+            Optional<Request> optionalRequest = requestRepo.findById(requestUpdateDTO.getRequestId());
+
             if (optionalRequest.isEmpty()) {
-                throw new RuntimeException("Request not found with ID: " + requestId);
+                throw new RuntimeException("Request not found with requestId: " + requestUpdateDTO.getRequestId());
             }
 
             Request request = optionalRequest.get();
-            if (request.getStatus() != Request.RequestStatus.PENDING) {
-                throw new RuntimeException("Request already processed.");
-            }
 
-            Request.RequestStatus status;
+            // Update the request status
             try {
-                status = requestUpdateDTO.getStatus();
+                Request.RequestStatus status = Request.RequestStatus.valueOf(String.valueOf(requestUpdateDTO.getStatus()));
+                request.setStatus(status);
+                request.setUpdatedAt(LocalDateTime.now());
+                requestRepo.save(request); // Save changes to the database
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Invalid status. Allowed values: ACCEPTED, REJECTED");
             }
-
-            request.setStatus(status);
-            request.setUpdatedAt(LocalDateTime.now());
-
-            Map<String , Object> data = new HashMap<>();
-            data.put("data" , request);
+            // Prepare the response
+            Map<String, Object> data = new HashMap<>();
+            data.put("data", request);
             return ResponseEntity.status(HttpStatus.OK).body(data);
         } catch (RuntimeException e) {
-            Map<String , Object> error = new HashMap<>();
-            error.put("error" , e.getMessage());
+            // Handle errors gracefully
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
 
-    public ResponseEntity getRequestsSentByUser(Long senderId) {
+//    For Shops
+
+    public ResponseEntity getAllConnectableAndConnectedCouriers(Long shopId) {
         try {
-            List<Request> sentRequests = requestRepo.findBySenderId(senderId);
-            List<Map<String, Object>> data =  enrichRequestsWithUserDetails(sentRequests);
-            return ResponseEntity.status(HttpStatus.OK).body(data);
+            List<Courier> allCouriers = courierRepo.findByStatus(Courier.Status.active);
+            System.out.println("Number of couriers found: " + allCouriers.size());
+
+            List<Map<String, Object>> responseList = new ArrayList<>();
+
+            for (Courier courier : allCouriers) {
+                Map<String, Object> courierData = new HashMap<>();
+                Optional<Request> sendRequest = requestRepo.findBySenderIdAndReceiverId(shopId, courier.getId());
+                Optional<Request> receivedAcceptedRequest = requestRepo.findBySenderIdAndReceiverIdAndStatus(courier.getId(), shopId, Request.RequestStatus.ACCEPTED);
+                Optional<Request> receivedPendingRequest = requestRepo.findBySenderIdAndReceiverIdAndStatus(courier.getId() , shopId , Request.RequestStatus.PENDING);
+                if(receivedPendingRequest.isPresent()){
+                    continue;
+                }
+                courierData.put("courierId", courier.getId());
+                courierData.put("courierName", courier.getCourierName());
+                courierData.put("branches", courier.getCourierBusinessData().getAvailableLocations());
+
+                if (sendRequest.isPresent()) {
+                    Request request = sendRequest.get();
+                    courierData.put("requestId", request.getId());
+                    courierData.put("status", request.getStatus());
+                    courierData.put("date", request.getUpdatedAt());
+                } else if (receivedAcceptedRequest.isPresent()) {
+                    Request request = receivedAcceptedRequest.get();
+                    courierData.put("requestId", request.getId());
+                    courierData.put("status", request.getStatus());
+                    courierData.put("date", request.getUpdatedAt());
+                } else {
+                    courierData.put("requestId", null);
+                    courierData.put("status", "None");
+                    courierData.put("date", null);
+                }
+
+                responseList.add(courierData);
+            }
+
+            return ResponseEntity.status(HttpStatus.OK).body(responseList);
+
         } catch (Exception e) {
-            throw new RuntimeException("Error fetching sent requests for user ID: " + senderId, e);
+
+            // Provide more informative error responses
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "An error occurred while processing the request.");
+            errorResponse.put("details", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonList(errorResponse));
         }
     }
 
-    public ResponseEntity getRequestsReceivedByUser(Long receiverId) {
+    public ResponseEntity getAllPendingReceiveRequestToShop(Long shopId) {
         try {
-            List<Request> receivedRequests = requestRepo.findByReceiverId(receiverId);
-            List<Map<String, Object>> data =  enrichRequestsWithUserDetails(receivedRequests);
-            return ResponseEntity.status(HttpStatus.OK).body(data);
+            // Fetch all pending requests where the shop is the receiver
+            List<Request> pendingRequests = requestRepo.findByReceiverIdAndStatus(
+                    shopId, Request.RequestStatus.PENDING);
+
+            // Prepare the response data
+            List<Map<String, Object>> responseData = pendingRequests.stream()
+                    .map(request -> {
+                        Map<String, Object> data = new HashMap<>();
+                        try {
+                            // Fetch courier details by sender ID
+                            Courier courier = courierRepo.findById(request.getSenderId())
+                                    .orElseThrow(() -> new IllegalArgumentException("Courier not found for ID: " + request.getSenderId()));
+
+                            data.put("courierId", courier.getId());
+                            data.put("courierName", courier.getCourierName());
+                            data.put("branches", courier.getCourierBusinessData() != null
+                                    ? courier.getCourierBusinessData().getAvailableLocations()
+                                    : Collections.emptyList());
+                            data.put("requestId", request.getId());
+                            data.put("status", request.getStatus());
+                            data.put("date", request.getUpdatedAt());
+                        } catch (Exception e) {
+                            // Log and return error details for this specific request
+                            data.put("error", "Failed to fetch courier details: " + e.getMessage());
+                        }
+                        return data;
+                    })
+                    .collect(Collectors.toList());
+
+            // Return the successful response
+            return ResponseEntity.status(HttpStatus.OK).body(responseData);
         } catch (Exception e) {
-            throw new RuntimeException("Error fetching received requests for user ID: " + receiverId, e);
+            // Handle unexpected exceptions gracefully
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "An unexpected error occurred while processing the request.");
+            errorResponse.put("details", e.getMessage());
+            errorResponse.put("timestamp", new Date());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonList(errorResponse));
         }
     }
 
-    private List<Map<String, Object>> enrichRequestsWithUserDetails(List<Request> requests) {
-        return requests.stream()
-                .map(request -> {
-                    // Initialize sender and receiver as Optional
-                    Optional<Shop> senderShop = Optional.empty();
-                    Optional<Courier> senderCourier = Optional.empty();
-                    Optional<Shop> receiverShop = Optional.empty();
-                    Optional<Courier> receiverCourier = Optional.empty();
 
-                    // Determine sender and receiver based on the roles
-                    if (Objects.equals(request.getSenderRole(), "shop")) {
-                        senderShop = shopRepo.findById(request.getSenderId());  // Sender is a Shop
-                        receiverCourier = courierRepo.findById(request.getReceiverId());  // Receiver is a Courier
-                    } else if (Objects.equals(request.getSenderRole(), "courier")) {
-                        senderCourier = courierRepo.findById(request.getSenderId());  // Sender is a Courier
-                        receiverShop = shopRepo.findById(request.getReceiverId());  // Receiver is a Shop
-                    }
+    //    For Courier
 
-                    // Create a map to store the enriched data
-                    Map<String, Object> data = new HashMap<>();
-                    data.put("id", request.getId());
-                    data.put("status", request.getStatus());
-                    data.put("date", request.getCreatedAt());
+    public ResponseEntity getAllConnectableAndConnectedShop(Long courierId) {
+        try {
+            List<Shop> allShops = shopRepo.findByStatus(Shop.Status.active);
+            System.out.println("Number of shops found: " + allShops.size());
 
-                    // Add sender details
-                    if (senderShop.isPresent()) {
-                        data.put("senderId", request.getSenderId());
-                        data.put("senderName", senderShop.get().getShopName());
-                        data.put("senderLocation", senderShop.get().getShopLocation());
-                    } else if (senderCourier.isPresent()) {
-                        data.put("senderId", request.getSenderId());
-                        data.put("senderName", senderCourier.get().getCourierName());
-                        data.put("senderLocation", senderCourier.get().getCourierLocation());
-                    }
+            List<Map<String, Object>> responseList = new ArrayList<>();
 
-                    // Add receiver details
-                    if (receiverShop.isPresent()) {
-                        data.put("receiverId", request.getReceiverId());
-                        data.put("receiverName", receiverShop.get().getShopName());
-                        data.put("receiverLocation", receiverShop.get().getShopLocation());
-                    } else if (receiverCourier.isPresent()) {
-                        data.put("receiverId", request.getReceiverId());
-                        data.put("receiverName", receiverCourier.get().getCourierName());
-                        data.put("receiverLocation", receiverCourier.get().getCourierLocation());
-                    }
+            for (Shop shop : allShops) {
+                Map<String, Object> shopData = new HashMap<>();
+                Optional<Request> sendRequest = requestRepo.findBySenderIdAndReceiverId(courierId, shop.getId());
+                Optional<Request> receivedAcceptedRequest = requestRepo.findBySenderIdAndReceiverIdAndStatus(shop.getId(), courierId, Request.RequestStatus.ACCEPTED);
+                Optional<Request> receivedPendingRequest = requestRepo.findBySenderIdAndReceiverIdAndStatus(shop.getId() , courierId , Request.RequestStatus.PENDING);
+                if(receivedPendingRequest.isPresent()){
+                    continue;
+                }
+                shopData.put("shopId", shop.getId());
+                shopData.put("shopName", shop.getShopName());
 
-                    return data;
-                })
-                .collect(Collectors.toList());
+                if (sendRequest.isPresent()) {
+                    Request request = sendRequest.get();
+                    shopData.put("requestId", request.getId());
+                    shopData.put("status", request.getStatus());
+                    shopData.put("date", request.getUpdatedAt());
+                } else if (receivedAcceptedRequest.isPresent()) {
+                    Request request = receivedAcceptedRequest.get();
+                    shopData.put("requestId", request.getId());
+                    shopData.put("status", request.getStatus());
+                    shopData.put("date", request.getUpdatedAt());
+                } else {
+                    shopData.put("requestId", null);
+                    shopData.put("status", "None");
+                    shopData.put("date", null);
+                }
+
+                responseList.add(shopData);
+            }
+
+            return ResponseEntity.status(HttpStatus.OK).body(responseList);
+
+        } catch (Exception e) {
+
+            // Provide more informative error responses
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "An error occurred while processing the request.");
+            errorResponse.put("details", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonList(errorResponse));
+        }
     }
+
+    public ResponseEntity getAllPendingReceiveRequestToCourier(Long courierId) {
+        try {
+            // Fetch all pending requests where the shop is the receiver
+            List<Request> pendingRequests = requestRepo.findByReceiverIdAndStatus(
+                    courierId, Request.RequestStatus.PENDING);
+
+            // Prepare the response data
+            List<Map<String, Object>> responseData = pendingRequests.stream()
+                    .map(request -> {
+                        Map<String, Object> data = new HashMap<>();
+                        try {
+                            // Fetch courier details by sender ID
+                            Shop shop = shopRepo.findById(request.getSenderId())
+                                    .orElseThrow(() -> new IllegalArgumentException("Courier not found for ID: " + request.getSenderId()));
+
+                            data.put("shopId", shop.getId());
+                            data.put("courierName", shop.getShopName());
+                            data.put("requestId", request.getId());
+                            data.put("status", request.getStatus());
+                            data.put("date", request.getUpdatedAt());
+                        } catch (Exception e) {
+                            // Log and return error details for this specific request
+                            data.put("error", "Failed to fetch shop details: " + e.getMessage());
+                        }
+                        return data;
+                    })
+                    .collect(Collectors.toList());
+
+            // Return the successful response
+            return ResponseEntity.status(HttpStatus.OK).body(responseData);
+        } catch (Exception e) {
+            // Handle unexpected exceptions gracefully
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "An unexpected error occurred while processing the request.");
+            errorResponse.put("details", e.getMessage());
+            errorResponse.put("timestamp", new Date());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonList(errorResponse));
+        }
+    }
+
+
 
 }

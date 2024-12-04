@@ -6,7 +6,10 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "requests")
+@Table(
+        name = "requests",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"senderId", "receiverId"})
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -46,5 +49,3 @@ public class Request {
         REJECTED
     }
 }
-
-

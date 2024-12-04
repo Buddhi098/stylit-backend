@@ -10,6 +10,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class CourierBusinessDataDTO {
@@ -27,6 +28,8 @@ public class CourierBusinessDataDTO {
     @NotBlank(message = "Business email is required")
     @Email(message = "Business email should be valid")
     private String businessEmail;
+
+    private List<String> availableLocations;
 
     @NotBlank(message = "Business document is required")
     @Lob

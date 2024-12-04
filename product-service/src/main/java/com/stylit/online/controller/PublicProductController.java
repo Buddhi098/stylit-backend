@@ -39,4 +39,9 @@ public class PublicProductController {
     public ResponseEntity getProductById(@PathVariable Long productId){
         return productService.getProductById(productId);
     }
+
+    @GetMapping("getShopIdByProductID/{productId}")
+    public ResponseEntity getShopIdByProductID(@PathVariable Long productId){
+        return productService.getShopIdByProductID(productId);
+    }
 }

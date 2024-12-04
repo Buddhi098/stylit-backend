@@ -84,6 +84,7 @@ public class CourierService {
                     .businessRegDate(courierBusinessDataDTO.getBusinessRegDate())
                     .businessEmail(courierBusinessDataDTO.getBusinessEmail())
                     .businessDocument(courierBusinessDataDTO.getBusinessDocument())
+                    .availableLocations(courierBusinessDataDTO.getAvailableLocations())
                     .build();
 
             CourierLocationDTO courierLocationDTO = courierDTO.getCourierLocation();
@@ -295,6 +296,17 @@ public class CourierService {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiErrorResponse("Can't fetch data" , errors));
         }
 
+    }
+
+    public ResponseEntity getAllActiveCourier(){
+        try{
+            List<Courier> activeCourier = courierRepo.findByStatus(Courier.Status.valueOf("active"));
+
+            return ResponseEntity.status(HttpStatus.OK).body(activeCourier);
+
+        }catch(Exception e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
 }

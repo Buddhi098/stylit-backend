@@ -7,4 +7,6 @@ import lombok.Data;
 public class RequestUpdateDTO {
 
     private Request.RequestStatus status; // ACCEPTED or REJECTED
+    private Long requestId;
+
 }
